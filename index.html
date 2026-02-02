@@ -7,14 +7,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary: #00d1b2; /* Professional Tech Green */
-            --bg: #0f172a;      /* Deep Navy/Black */
+            --primary: #00d1b2; 
+            --bg: #0f172a;      
             --card: #1e293b;
             --text: #f8fafc;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -22,143 +22,171 @@
         }
 
         header {
-            padding: 80px 20px;
+            padding: 60px 20px;
             text-align: center;
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        h1 { font-size: 3rem; margin-bottom: 10px; }
+        .tagline { font-size: 1.2rem; color: #94a3b8; margin-bottom: 30px; }
 
-        h1 { font-size: 3rem; margin-bottom: 10px; letter-spacing: -1px; }
-        .tagline { font-size: 1.25rem; color: #94a3b8; margin-bottom: 30px; }
-
-        /* Video/Image Placeholders */
+        /* SLIDESHOW STYLES */
         .hero-media {
             width: 100%;
-            aspect-ratio: 16/9;
+            position: relative;
             background: #000;
             border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             border: 1px solid #334155;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             overflow: hidden;
             margin-bottom: 50px;
         }
 
-        /* Call to Action Button */
-        .btn-etsy {
-            background-color: #f1641e; /* Etsy Orange */
+        .slideshow-container { position: relative; width: 100%; aspect-ratio: 16/9; }
+        .mySlides { display: none; width: 100%; height: 100%; }
+        .slide-asset { width: 100%; height: 100%; object-fit: cover; border: none; }
+
+        /* Navigation Arrows */
+        .prev, .next {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            padding: 16px;
             color: white;
-            padding: 18px 35px;
-            border-radius: 50px;
-            text-decoration: none;
             font-weight: bold;
-            font-size: 1.2rem;
-            transition: transform 0.2s;
-            display: inline-block;
+            font-size: 20px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            border-radius: 50%;
+            margin: 0 10px;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        .next { right: 0; }
+        .prev:hover, .next:hover { background: var(--primary); color: var(--bg); }
+
+        /* Dots */
+        .dots-container { text-align: center; margin-top: -30px; position: relative; z-index: 11; padding-bottom: 20px; }
+        .dot {
+            cursor: pointer; height: 12px; width: 12px; margin: 0 5px;
+            background-color: #717171; border-radius: 50%; display: inline-block;
+        }
+        .active { background-color: var(--primary); }
+
+        /* BUTTONS & FORMS */
+        .btn-etsy {
+            background-color: #f1641e; color: white; padding: 18px 35px;
+            border-radius: 50px; text-decoration: none; font-weight: bold;
+            font-size: 1.2rem; display: inline-block; transition: 0.3s;
         }
         .btn-etsy:hover { transform: scale(1.05); background-color: #ff7d3b; }
 
-        /* Feature Grid */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin: 50px 0;
-        }
-        .feature-card {
-            background: var(--card);
-            padding: 30px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid #334155;
-        }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 50px 0; }
+        .feature-card { background: var(--card); padding: 30px; border-radius: 12px; text-align: center; border: 1px solid #334155; }
         .feature-card i { color: var(--primary); font-size: 2rem; margin-bottom: 15px; }
 
-        /* Contact Form */
-        .contact-section {
-            background: var(--card);
-            padding: 40px;
-            border-radius: 12px;
-            margin-top: 60px;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: white;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-        .btn-send {
-            background: var(--primary);
-            color: var(--bg);
-            border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        .contact-section { background: var(--card); padding: 40px; border-radius: 12px; margin-top: 60px; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; box-sizing: border-box; }
+        .btn-send { background: var(--primary); color: var(--bg); border: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1rem; }
 
-        footer { text-align: center; padding: 40px; color: #64748b; font-size: 0.9rem; }
+        footer { text-align: center; padding: 40px; color: #64748b; }
+
+        .fade { animation: fadeEffect 1s; }
+        @keyframes fadeEffect { from {opacity: 0.4} to {opacity: 1} }
     </style>
 </head>
 <body>
 
 <header>
     <h1>InfoMatrix 3D</h1>
-    <p class="tagline">The Ultimate Wi-Fi Desktop Ticker for Stocks, Crypto, and Sports.</p>
-    <a href="https://www.etsy.com/ca/listing/4428438419/stock-crypto-sports-live-ticker-text" class="btn-etsy"><i class="fab fa-etsy"></i> View on Etsy</a>
+    <p class="tagline">The Wi-Fi Desktop Ticker for Serious Traders & Setup Enthusiasts.</p>
+    <a href="https://www.etsy.com/ca/listing/4428438419/stock-crypto-sports-live-ticker-text" target="_blank" class="btn-etsy"><i class="fab fa-etsy"></i> Order on Etsy — $90</a>
 </header>
 
 <div class="container">
     <div class="hero-media">
-        <p style="color: #475569;">[ Placeholder for 16:9 Showcase Video ]</p>
+        <div class="slideshow-container">
+            
+            <div class="mySlides fade">
+                <iframe class="slide-asset" 
+                    src="https://www.youtube.com/embed/YOUR_VIDEO_ID?autoplay=1&mute=1&loop=1&playlist=YOUR_VIDEO_ID&controls=0&rel=0" 
+                    allow="autoplay; encrypted-media" allowfullscreen>
+                </iframe>
+            </div>
+
+            <div class="mySlides fade">
+                <img src="your-image-1.jpg" class="slide-asset" alt="Desk setup view">
+            </div>
+
+            <div class="mySlides fade">
+                <img src="your-image-2.jpg" class="slide-asset" alt="Product close up">
+            </div>
+
+            <button class="prev" onclick="plusSlides(-1)">&#10094;</button>
+            <button class="next" onclick="plusSlides(1)">&#10095;</button>
+        </div>
+        <div class="dots-container">
+            <span class="dot" onclick="currentSlide(1)"></span>
+            <span class="dot" onclick="currentSlide(2)"></span>
+            <span class="dot" onclick="currentSlide(3)"></span>
+        </div>
     </div>
 
     <div class="features">
         <div class="feature-card">
             <i class="fas fa-wifi"></i>
             <h3>Wi-Fi Connected</h3>
-            <p>No cables to your PC. Updates in real-time over your home network.</p>
+            <p>Stand-alone device. No PC connection or phone apps required for daily use.</p>
         </div>
         <div class="feature-card">
-            <i class="fas fa-hand-holding-heart"></i>
-            <h3>Zero Subscriptions</h3>
-            <p>No monthly fees. Buy once, enjoy lifetime updates and data.</p>
+            <i class="fas fa-chart-line"></i>
+            <h3>Live Data</h3>
+            <p>Track Stocks, Crypto, and Sports scores with custom scrolling speeds.</p>
         </div>
         <div class="feature-card">
             <i class="fas fa-microchip"></i>
-            <h3>Hand-Assembled</h3>
-            <p>Built with precision using high-quality LED modules and custom firmware.</p>
+            <h3>Zero Subscriptions</h3>
+            <p>No monthly fees. One-time purchase includes lifetime firmware updates.</p>
         </div>
     </div>
 
     <div class="contact-section">
-        <h2>Have a Question?</h2>
-        <p>Interested in bulk orders or custom features? Send us a query.</p>
+        <h2>Questions?</h2>
+        <p>Drop us a message and we'll get back to you within 24 hours.</p>
         <form action="https://api.web3forms.com/submit" method="POST">
             <input type="hidden" name="access_key" value="cd58c4f2-40e7-4aa5-bbbd-908be8c2ba3e">
-            
-            <input type="text" name="name" placeholder="Full Name" required>
-            <input type="email" name="email" placeholder="Email Address" required>
-            <textarea name="message" rows="5" placeholder="Your Message" required></textarea>
-            <button type="submit" class="btn-send">Send Message</button>
+            <input type="text" name="name" placeholder="Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <textarea name="message" rows="4" placeholder="Your Message" required></textarea>
+            <button type="submit" class="btn-send">Send Inquiry</button>
         </form>
     </div>
 </div>
 
 <footer>
-    <p>&copy; 2026 InfoMatrix 3D. Hand-crafted for the modern desk.</p>
+    <p>&copy; 2026 InfoMatrix 3D | Hand-assembled for your desktop.</p>
 </footer>
+
+<script>
+    let slideIndex = 1;
+    showSlides(slideIndex);
+
+    function plusSlides(n) { showSlides(slideIndex += n); }
+    function currentSlide(n) { showSlides(slideIndex = n); }
+
+    function showSlides(n) {
+        let i;
+        let slides = document.getElementsByClassName("mySlides");
+        let dots = document.getElementsByClassName("dot");
+        if (n > slides.length) {slideIndex = 1}    
+        if (n < 1) {slideIndex = slides.length}
+        for (i = 0; i < slides.length; i++) { slides[i].style.display = "none"; }
+        for (i = 0; i < dots.length; i++) { dots[i].className = dots[i].className.replace(" active", ""); }
+        slides[slideIndex-1].style.display = "block";  
+        dots[slideIndex-1].className += " active";
+    }
+</script>
 
 </body>
 </html>
