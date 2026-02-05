@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Matrix Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
+
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #fff; text-align: center; margin: 0; padding: 20px; }
+    h2 { color: #f0f0f0; margin-bottom: 20px; }
+    
+    .container { max-width: 400px; margin: 0 auto; background: #2a2a2a; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    
+    .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #444; }
+    .section:last-child { border-bottom: none; }
+    
+    label { display: block; margin: 10px 0 5px; text-align: left; color: #aaa; font-size: 14px; }
+    input, select { width: 100%; padding: 10px; margin-bottom: 10px; background: #333; border: 1px solid #555; color: #fff; border-radius: 6px; box-sizing: border-box; }
+    input:focus { outline: none; border-color: #007bff; }
+    
+    button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    
+    #drop-zone { border: 2px dashed #555; padding: 30px; margin: 10px 0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+    #drop-zone.hover { border-color: #0f0; background: #333; }
+    canvas { border: 1px solid #555; margin-top: 10px; background: #000; border-radius: 4px; }
+    #gif-status { font-size: 13px; color: #aaa; margin-top: 5px; }
+    
+    /* Improved Duration Field Styling */
+    fieldset { border: 1px solid #444; border-radius: 8px; padding: 10px; margin-top: 10px; }
+    legend { font-size: 12px; color: #007bff; padding: 0 5px; }
+	
+	
+.update-banner {
+    display: none;
+    position: relative;
+    margin: 8px 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    color: #5d4037;
+    font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+  .update-banner.show { display: block; }
+  .update-banner a {
+    font-weight: 600;
+    color: #1a73e8;
+    text-decoration: none;
+    margin-left: 8px;
+  }
+
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+ <h2>
+    <svg width="24" height="24" viewBox="0 0 24 24" stroke="#22c55e" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"></rect>
+      <rect x="14" y="3" width="7" height="7"></rect>
+      <rect x="3" y="14" width="7" height="7"></rect>
+      <rect x="14" y="14" width="7" height="7"></rect>
+    </svg>
+    InfoMatrix Dashboard
+  </h2>
+
+  <div class="section">
+    <button onclick="toggleFocus()" style="background: #e67e22;">Start/Stop Focus Mode</button>
+  </div>
+
+<div class="section">
+    <label>Stock Symbols (comma separated)</label>
+    <textarea id="stocks" rows="2" placeholder="AAPL, BTC-USD, TSLA" 
+          oninput="this.value = this.value.toUpperCase()"
+          style="width: 100%; padding: 10px; background: #333; border: 1px solid #555; 
+                 color: #fff; border-radius: 6px; box-sizing: border-box; resize: vertical; 
+                 font-family: inherit;"></textarea>
+
+    <div style="display: flex; gap: 15px; align-items: flex-end;">
+      <div style="flex-grow: 1;">
+        <label>Graph Range</label>
+        <select id="range" style="margin-bottom: 0;"> <option value="1h">1 Hour</option>
+		<option value="4h">4 Hour</option>
+          <option value="1d">1 Day</option>
+          <option value="1mo">1 Month</option>
+          <option value="1y">1 Year</option>
+          <option value="livegrid">Grid (Text Only)</option>
+        </select>
+      </div>
+	  <div style="flex-grow: 1;">
+        <label>Graph Type</label>
+        <select id="graphtype" style="margin-bottom: 0;"> <option value="line">Line</option>
+		<option value="candle">CandleStick</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
+
+      
+      <div style="padding-bottom: 10px;"> <label style="cursor: pointer; margin: 0;">
+          <input type="checkbox" id="stockLogo" style="width: auto; margin-right: 5px; vertical-align: middle;"> 
+          Logo
+        </label>
+      </div>
+
+	        
+	  <div style="padding-bottom: 10px;"> <label style="cursor: pointer; margin: 0;">
+	   <input type="checkbox" id="isUSA" style="width: auto; margin-right: 5px;"> 
+      .US
+  </label> </div>
+    </div>
+
+
+<div style="display: flex; gap: 15px; align-items: flex-end;">
+<div style="flex-grow: 1;">
+  <label>Realtime - Finnhub API Key (Optional)</label>
+  <input type="text" id="finnhub" placeholder="API Key - Get free at finnhub.io">
+   
+</div>  
+<div>
+  <label>Exchange</label>
+  <select id="cexch" disabled style="width:140px;color:#888;background:#f3f3f3;">
+    <option value="BINANCE" selected>BINANCE</option>
+    <option value="COINBASE">COINBASE</option>
+	<option value="POLONIEX">POLONIEX</option>
+   </select>
+</div>
+
+</div>
+
+  <div><label>Stock Alerts</label>
+	    <input type="text" id="sAlerts" maxlength="320" placeholder="AAPL > 300, TSLA < 250, ETH-USD < 2005" oninput="this.value = this.value.toUpperCase()"></div>
+
+
+  <div><label>Custom Display Names (Ticker>>Name)</label>
+<input type="text" id="customAliasStr" placeholder="BTC-USD>>BITCOIN, TSLA>>TESLA"></div>
+
+  </div>
+
+  <div class="section">
+
+    <label>NBA Teams (comma separated)</label>
+    <input type="text" id="nbaTeam" placeholder="TOR,LAL,GSW or ALL" oninput="this.value = this.value.toUpperCase()" />
+
+    <label>EPL Teams (comma separated)</label>
+    <input type="text" id="eplTeam" placeholder="ARS,LIV,MUN or ALL" oninput="this.value = this.value.toUpperCase()" />
+
+    <label>NFL Teams (comma separated)</label>
+    <input type="text" id="nflTeam" placeholder="KC,PHI,BUF,DAL or ALL" oninput="this.value = this.value.toUpperCase()" />
+	
+	<label>NHL Teams (comma separated)</label>
+    <input type="text" id="nhlTeam" placeholder="TOR,VGK,MTL or ALL" oninput="this.value = this.value.toUpperCase()" />
+	<p style="font-size: 9px;"><i>Reboot is required to initialize any Sports or Stock logo</i>.</p>
+  </div>
+
+  <div class="section">
+    <label>City Weather (e.g. Toronto,CA)</label>
+    <input type="text" id="city" placeholder="City,Country">
+    
+    <div style="display: flex; gap: 10px;">
+      <div style="flex: 1;">
+        <label>Temp Units</label>
+        <select id="units">
+          <option value="metric">Celsius (°C)</option>
+          <option value="imperial">Fahrenheit (°F)</option>
+        </select>
+      </div>
+      
+      <div style="flex: 1;">
+        <label>Timezone</label>
+        <input type="number" id="tz" value="-5">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <label>Message Configuration</label>
+    <div style="display:flex; gap:5px; margin-bottom:5px;">
+       <select id="mode1" onchange="updateUI(1)" style="width:80px;">
+         <option value="text">Text</option>
+         <option value="rss">RSS</option>
+       </select>
+       <input type="text" id="val1" style="flex-grow:1;"> 
+       <input type="color" id="col1" value="#ffffff" style="width:40px; height: 38px;">
+    </div>
+    <div style="display:flex; gap:5px; margin-bottom:5px;">
+       <select id="mode2" onchange="updateUI(2)" style="width:80px;">
+         <option value="text">Text</option>
+         <option value="rss">RSS</option>
+       </select>
+       <input type="text" id="val2" style="flex-grow:1;"> 
+       <input type="color" id="col2" value="#ffffff" style="width:40px; height: 38px;">
+    </div>
+    <div style="display:flex; gap:5px; margin-bottom:5px;">
+       <select id="mode3" onchange="updateUI(3)" style="width:80px;">
+         <option value="text">Text</option>
+         <option value="rss">RSS</option>
+       </select>
+       <input type="text" id="val3" style="flex-grow:1;"> 
+       <input type="color" id="col3" value="#ffffff" style="width:40px; height: 38px;">
+    </div>
+  </div>
+  
+    <div class="section">
+    <label>Focus Timer (Pomodoro)</label>
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <div style="flex:1">
+           <span style="font-size:12px; color:#aaa;">Work (min)</span>
+           <input type="number" id="fWork" placeholder="25">
+        </div>
+        <div style="flex:1">
+           <span style="font-size:12px; color:#aaa;">Break (min)</span>
+           <input type="number" id="fBrk" placeholder="5">
+        </div>
+    </div>
+    </div>
+  <div class="section">
+    <label>Brightness & Schedule</label>
+    <div style="display:flex; align-items:center;">
+      <input type="range" id="bright" min="5" max="255" oninput="updateBritLabel(this.value)">
+      <span id="bright-val" style="margin-left:10px; width:30px">60</span>
+    </div>
+
+    <label style="margin-top:15px">
+      <input type="checkbox" id="nMode" style="width:auto;"> Enable Night Mode
+    </label>
+    
+    <div id="night-settings" style="display:none; margin-top:10px; background:#222; padding:10px; border-radius:6px;">
+      <label>Dim Between (Hours 0-23)</label>
+      <div style="display:flex; gap:10px;">
+        <input type="number" id="nStart" placeholder="Start (22)">
+        <input type="number" id="nEnd" placeholder="End (7)">
+      </div>
+      <label>Night Brightness</label>
+      <div style="display:flex; align-items:center;">
+        <input type="range" id="nBrit" min="0" max="100" oninput="updateNBritLabel(this.value)">
+        <span id="nbrit-val" style="margin-left:10px; width:30px">10</span>
+      </div>
+    </div>
+
+    <fieldset>
+      <legend>Cycle Durations (Seconds)</legend>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <label style="flex:1; min-width: 80px;">
+          <span>Stocks</span>
+          <input type="number" id="dStock">
+        </label>
+        <label style="flex:1; min-width: 80px;">
+          <span>NBA</span>
+          <input type="number" id="dNba">
+        </label>
+        <label style="flex:1; min-width: 80px;">
+          <span>EPL</span>
+          <input type="number" id="durEpl">
+        </label>
+        <label style="flex:1; min-width: 80px;">
+          <span>NFL</span>
+          <input type="number" id="dNfl">
+        </label>
+        <label style="flex:1; min-width: 80px;">
+          <span>Weather</span>
+          <input type="number" id="dWeath">
+        </label>
+        <label style="flex:1; min-width: 80px;">
+          <span>Msg</span>
+          <input type="number" id="dMsg">
+        </label>
+        <label style="flex:1; min-width: 80px;">
+          <span>GIF</span>
+          <input type="number" id="dGif">
+        </label>
+		<label style="flex:1">
+          <span>NHL</span>
+          <input type="number" id="dNhl">
+        </label>
+      </div>
+    </fieldset>
+  </div>
+ 
+  <button onclick="saveSettings()" style="margin-bottom: 25px;">Save Configuration</button>
+  
+
+  <div class="section" style="border-bottom: none;">
+    <button onclick="rebootDevice()" style="background: #d9534f;">Reboot Device</button>
+  </div>
+  <hr style="border-color: #444; margin: 20px 0;">
+
+  <div class="section">
+    <label>Upload Animation (GIF)</label>
+	
+	<label for="matrixSizeSelect" class="label">Matrix Size</label>
+	  <select id="matrixSizeSelect">
+		<option value="128x64">128 x 64 px</option> <option value="80x40">80 x 40 px</option>
+		<option value="64x32" selected>64 x 32 px</option>
+	  </select>
+
+    <select id="resize-mode" style="margin-bottom: 10px;">
+      <option value="stretch">Stretch to Fill</option>
+      <option value="fit">Fit Center</option>
+      <option value="crop">Crop to Fit</option>
+    </select>
+    <div id="drop-zone">Drop GIF here or Click</div>
+    <input type="file" id="file-input" accept="image/gif" style="display:none">
+    <canvas id="preview" width="64" height="32" style="display:none"></canvas>
+    <p id="gif-status">Ready for GIF. Upload < 400 KB.</p>
+    <button id="upload-btn" disabled onclick="uploadGif()">Upload GIF to Matrix</button>
+    <button onclick="deleteGif()" style="background: #dc3545; margin-top: 10px;">Delete GIF</button>
+  </div>
+  
+  
+<div class="footer">
+  <span id="appVersion" data-version="1.12.1">infomatrix3d.com - v.1.12.1</span>
+</div>
+
+<div id="updateBanner" class="update-banner" role="status" aria-live="polite">
+  <span id="updateText">Updates available.</span>
+  <a id="updateLink" href="https://update.infomatrix3d.com" target="_blank" rel="noopener">Get update</a>
+</div>
+
+
+
+</div>
+
+
+<script>
+  // 1. SAFE ELEMENT SELECTION
+  // We use safe lookups so the script doesn't crash if an ID is missing
+  const keyEl = document.getElementById('finnhub');
+  const exchEl = document.getElementById('cexch');
+  // 'exchHelp' was missing in your HTML, causing the crash. We now handle it safely.
+  const helpEl = document.getElementById('exchHelp'); 
+
+  function updateExchangeState() {
+    if (!keyEl || !exchEl) return; // Safety check
+    
+    const hasKey = (keyEl.value || '').trim().length > 0;
+    exchEl.disabled = !hasKey;
+    exchEl.style.color = hasKey ? '#222' : '#888';
+    exchEl.style.background = hasKey ? '#fff' : '#f3f3f3';
+    
+    // Only update help text if the element actually exists
+    if (helpEl) {
+        helpEl.textContent = hasKey
+        ? 'Exchange selection is active. Pick the venue Finnhub should use.'
+        : 'Exchange selection is enabled after Finnhub key is entered.';
+    }
+  }
+
+  // Event Listeners
+  document.addEventListener('DOMContentLoaded', updateExchangeState);
+  if(keyEl) keyEl.addEventListener('input', updateExchangeState);
+  window.addEventListener('DOMContentLoaded', updateExchangeState);
+
+  function updateBritLabel(val) { 
+      const el = document.getElementById('bright-val');
+      if(el) el.innerText = val; 
+  }
+  function updateNBritLabel(val) { 
+      const el = document.getElementById('nbrit-val');
+      if(el) el.innerText = val; 
+  }
+
+  const nModeEl = document.getElementById('nMode');
+  if (nModeEl) {
+      nModeEl.onchange = function() {
+        document.getElementById('night-settings').style.display = this.checked ? 'block' : 'none';
+      };
+  }
+
+  function updateUI(id) {
+    if(id) setRowUI(id);
+    else { setRowUI(1); setRowUI(2); setRowUI(3); }
+  }
+
+  function setRowUI(id) {
+    const modeEl = document.getElementById('mode' + id);
+    const inputEl = document.getElementById('val' + id);
+    if (!modeEl || !inputEl) return;
+    
+    const mode = modeEl.value;
+    inputEl.placeholder = (mode === 'rss') ? "Enter RSS Feed URL" : "Enter Text Message";
+  }
+
+  function loadSettings() {
+    fetch('/api/data')
+      .then(res => res.json())
+      .then(data => {
+        // --- DATA LOADING ---
+        if(document.getElementById('stocks')) document.getElementById('stocks').value = data.stocks || "";
+		if(document.getElementById('customAliasStr')) document.getElementById('customAliasStr').value = data.customAliasStr || "";
+        if(document.getElementById('stockLogo')) document.getElementById('stockLogo').checked = (data.stockLogo !== false);
+		 if(document.getElementById('splitScreen')) document.getElementById('splitScreen').checked = (data.splitScreen !== false);
+		if(document.getElementById('sAlerts')) document.getElementById('sAlerts').value = data.sAlerts || "";
+        
+        if(document.getElementById('finnhub')) document.getElementById('finnhub').value = data.finnhub || "";
+        if(document.getElementById('isUSA')) document.getElementById('isUSA').checked = (data.isUSA === true);
+        
+        if(document.getElementById('city')) document.getElementById('city').value = data.city || "";
+        if(document.getElementById('tz')) document.getElementById('tz').value = data.tz || "-5";
+        if(document.getElementById('range')) document.getElementById('range').value = data.range || "1d";
+		if(document.getElementById('graphtype')) document.getElementById('graphtype').value = data.graphtype || "Both";
+        if(document.getElementById('cexch')) document.getElementById('cexch').value = data.cexch || "BINANCE";
+        
+        // Timers
+        if(document.getElementById('dStock')) document.getElementById('dStock').value = data.dStock || 60;
+        if(document.getElementById('dWeath')) document.getElementById('dWeath').value = data.dWeath || 10;
+        if(document.getElementById('dMsg')) document.getElementById('dMsg').value = data.dMsg || 15;
+        if(document.getElementById('dGif')) document.getElementById('dGif').value = data.dGif || 30;
+        
+        if(document.getElementById('fWork')) document.getElementById('fWork').value = data.fWork || 25;
+        if(document.getElementById('fBrk')) document.getElementById('fBrk').value  = data.fBrk  || 5;
+
+        // Sports
+        if(document.getElementById('nhlTeam')) document.getElementById('nhlTeam').value = data.nhlTeam || "";
+        if(document.getElementById('dNhl')) document.getElementById('dNhl').value = data.dNhl || 30;
+
+        if(document.getElementById('nbaTeam')) document.getElementById('nbaTeam').value = data.nbaTeam || "";
+        if(document.getElementById('dNba')) document.getElementById('dNba').value = data.dNba || 30;
+
+        if(document.getElementById('eplTeam')) document.getElementById('eplTeam').value = data.eplTeam || "";
+        if(document.getElementById('durEpl')) document.getElementById('durEpl').value = data.durEpl || 30;
+
+        if(document.getElementById('nflTeam')) document.getElementById('nflTeam').value = data.nflTeam || "";
+        if(document.getElementById('dNfl')) document.getElementById('dNfl').value = data.dNfl || 30;
+        
+        if(document.getElementById('units')) document.getElementById('units').value = (data.metric !== false) ? "metric" : "imperial";
+
+        // Messages
+        for(let i=1; i<=3; i++) {
+          let rss = data['rssUrl'+i];
+          if (rss && rss.length > 1) {
+             if(document.getElementById('mode'+i)) document.getElementById('mode'+i).value = "rss";
+             if(document.getElementById('val'+i)) document.getElementById('val'+i).value = rss;
+          } else {
+             if(document.getElementById('mode'+i)) document.getElementById('mode'+i).value = "text";
+             if(document.getElementById('val'+i)) document.getElementById('val'+i).value = data['msgL'+i] || "";
+          }
+          if(document.getElementById('col'+i)) document.getElementById('col'+i).value = data['colL'+i] || "#ffffff";
+        }
+        
+        updateUI();
+        
+        // --- FIX: Prevent crash here ---
+        try {
+           updateExchangeState();
+        } catch(e) { console.log("Exchange State Error ignored"); }
+
+        // --- BRIGHTNESS SETTINGS (Now guaranteed to run) ---
+        if(document.getElementById('bright')) {
+            document.getElementById('bright').value = data.bright || 60;
+            updateBritLabel(data.bright || 60);
+        }
+
+        if(document.getElementById('nMode')) {
+            document.getElementById('nMode').checked = data.nMode || false;
+            document.getElementById('night-settings').style.display = data.nMode ? 'block' : 'none';
+        }
+        
+        if(document.getElementById('nStart')) document.getElementById('nStart').value = data.nStart ?? 22;
+        if(document.getElementById('nEnd')) document.getElementById('nEnd').value = data.nEnd ?? 7;
+        
+        if(document.getElementById('nBrit')) {
+            document.getElementById('nBrit').value = data.nBrit ?? 10;
+            updateNBritLabel(data.nBrit ?? 10);
+        }
+      })
+      .catch(e => console.log("API Error:", e));
+  }
+
+  function saveSettings() {
+    const formData = new FormData();
+    // Helper to safely append if element exists
+    const appendIf = (key, id, checkbox=false) => {
+        const el = document.getElementById(id);
+        if(el) formData.append(key, checkbox ? el.checked : el.value);
+    };
+
+    appendIf('stocks', 'stocks');
+	appendIf('customAliasStr', 'customAliasStr');
+    appendIf('stockLogo', 'stockLogo', true);
+	appendIf('splitScreen', 'splitScreen', true);
+	appendIf('sAlerts', 'sAlerts');
+    appendIf('finnhub', 'finnhub');
+    appendIf('isUSA', 'isUSA', true);
+    appendIf('city', 'city');
+    appendIf('units', 'units');
+    appendIf('tz', 'tz');
+    appendIf('range', 'range');
+	appendIf('graphtype', 'graphtype');
+    appendIf('cexch', 'cexch');
+    
+    appendIf('fWork', 'fWork');
+    appendIf('fBrk', 'fBrk');
+
+    appendIf('nbaTeam', 'nbaTeam');
+    appendIf('dNba', 'dNba');
+    appendIf('eplTeam', 'eplTeam');
+    appendIf('durEpl', 'durEpl');
+    appendIf('nflTeam', 'nflTeam');
+    appendIf('dNfl', 'dNfl');
+    appendIf('nhlTeam', 'nhlTeam');
+    appendIf('dNhl', 'dNhl');
+
+    for(let i=1; i<=3; i++) {
+      let mode = document.getElementById("mode"+i).value;
+      let val = document.getElementById("val"+i).value;
+      let col = document.getElementById("col"+i).value;
+      if(mode === 'rss') {
+        formData.append("rssUrl"+i, val);
+        formData.append("msgL"+i, "");
+      } else {
+        formData.append("msgL"+i, val);
+        formData.append("rssUrl"+i, "");
+      }
+      formData.append("colL"+i, col);
+    }
+
+    appendIf('bright', 'bright');
+    appendIf('nMode', 'nMode', true);
+    appendIf('nStart', 'nStart');
+    appendIf('nEnd', 'nEnd');
+    appendIf('nBrit', 'nBrit');
+    
+    appendIf('dStock', 'dStock');
+    appendIf('dWeath', 'dWeath');
+    appendIf('dMsg', 'dMsg');
+    appendIf('dGif', 'dGif');
+
+    fetch('/api/save', { method: 'POST', body: formData })
+      .then(res => alert('Settings Saved! Device Updating...'));
+  }
+
+  // --- GIF LOGIC (Unchanged) ---
+  let processedBlob = null;
+  const dz = document.getElementById('drop-zone');
+  const inp = document.getElementById('file-input');
+  dz.onclick = () => inp.click();
+  dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('hover'); };
+  dz.ondrop = (e) => { e.preventDefault(); dz.classList.remove('hover'); handleFile(e.dataTransfer.files[0]); };
+  inp.onchange = (e) => handleFile(e.target.files[0]);
+
+  function handleFile(file) {
+    if (!file || file.type !== 'image/gif') return alert("Not a GIF!");
+    const reader = new FileReader();
+    reader.onload = (e) => processGif(new Uint8Array(e.target.result));
+    reader.readAsArrayBuffer(file);
+  }
+
+   function toggleFocus() {
+    fetch('/api/focus/toggle', { method: 'POST' })
+      .then(res => res.text())
+      .then(txt => alert("Focus Mode: " + txt));
+   }
+
+   function rebootDevice() {
+     if (confirm("Are you sure you want to reboot the Matrix?")) {
+       fetch('/api/reboot') 
+         .then(() => {
+           alert("Rebooting... Page will reload in 15 seconds.");
+           setTimeout(() => location.reload(), 15000);
+         });
+     }
+   }
+   
+   
+   
+ // ---- Config ----
+  const LATEST_URL = 'https://update.infomatrix3d.com/latest.txt';
+  const UPDATE_URL = 'https://update.infomatrix3d.com';
+  const REQUEST_TIMEOUT_MS = 2500;            // keep the page responsive
+  const CHECK_KEY = 'updateCheck';            // localStorage key
+  const CHECK_TTL_MS = 12 * 60 * 60 * 1000;   // 12 hours
+
+  // ---- Helpers ----
+  function getCurrentVersion() {
+    const el = document.querySelector('#appVersion');
+    if (el && el.dataset.version) return el.dataset.version.trim();
+    const meta = document.querySelector('meta[name="app-version"]');
+    return meta ? meta.content.trim() : null;
+  }
+
+  // Compare major.minor.patch; returns -1 if a<b, 0 equal, 1 a>b
+  function cmpSemver(a, b) {
+    const toNums = (v) => (v || '0.0.0').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
+    const [a1=0, a2=0, a3=0] = toNums(a);
+    const [b1=0, b2=0, b3=0] = toNums(b);
+    if (a1 !== b1) return a1 < b1 ? -1 : 1;
+    if (a2 !== b2) return a2 < b2 ? -1 : 1;
+    if (a3 !== b3) return a3 < b3 ? -1 : 1;
+    return 0;
+  }
+
+  function showBanner(current, latest) {
+    const banner = document.getElementById('updateBanner');
+    const text = document.getElementById('updateText');
+    const link = document.getElementById('updateLink');
+    if (!banner || !text || !link) return;
+    text.textContent = `Update ${latest} available.`;
+    link.href = UPDATE_URL;
+    banner.classList.add('show');
+  }
+
+  async function fetchLatestVersionWithTimeout(url, timeoutMs) {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-cache',   // allow HTTP revalidation but don't use a stale entry
+        credentials: 'omit',
+        signal: controller.signal
+      });
+      clearTimeout(t);
+      if (!res.ok) throw new Error(`Version endpoint failed: ${res.status}`);
+      const txt = (await res.text()).trim();
+      // Defensive validation (semver-ish)
+      if (!/^\d+(\.\d+){0,2}([\-+][A-Za-z0-9.+-]+)?$/.test(txt)) {
+        throw new Error('Invalid version format: ' + txt);
+      }
+      return txt;
+    } catch (err) {
+      clearTimeout(t);
+      console.debug('Update check error:', err.message || err);
+      return null; // fail-safe
+    }
+  }
+
+  async function checkForUpdates() {
+    const current = getCurrentVersion();
+    if (!current) return;
+
+    // 1) Try local cache first
+    let cached;
+    try {
+      cached = JSON.parse(localStorage.getItem(CHECK_KEY) || 'null');
+    } catch (_) { /* ignore */ }
+
+    const now = Date.now();
+
+    // If cached within TTL, use it immediately (no network)
+    if (cached && cached.latest && (now - cached.time) < CHECK_TTL_MS) {
+      if (cmpSemver(current, cached.latest) === -1) {
+        showBanner(current, cached.latest);
+      }
+      return; // done; revalidation will happen on a future visit after TTL
+    }
+
+    // 2) Revalidate (network) because cache is missing or expired
+    const latest = await fetchLatestVersionWithTimeout(LATEST_URL, REQUEST_TIMEOUT_MS);
+
+    // If endpoint fails, do nothing (page stays fully functional)
+    if (!latest) return;
+
+    // 3) Update the local cache and show banner if newer
+    try {
+      localStorage.setItem(CHECK_KEY, JSON.stringify({ time: now, latest }));
+    } catch (_) { /* ignore storage errors */ }
+
+    if (cmpSemver(current, latest) === -1) {
+      showBanner(current, latest);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', checkForUpdates);
+
+
+   function getSelectedMatrixSize() {
+    // Try radios first; fall back to dropdown
+    const radio = document.querySelector('input[name="matrixSize"]:checked');
+    const dd = document.getElementById('matrixSizeSelect');
+    const raw = radio ? radio.value : (dd ? dd.value : null);
+    const m = /^(\d+)\s*x\s*(\d+)$/i.exec(raw || '');
+    if (!m) return { w: 64, h: 32 }; // default if not found
+    
+    const w = parseInt(m[1], 10), h = parseInt(m[2], 10);
+    
+    // Allow 80x40, 64x32, AND 128x64
+    // --- SYNTAX FIXED BELOW ---
+    if ((w === 80 && h === 40) || (w === 64 && h === 32) || (w === 128 && h === 64)) {
+        return { w, h };
+    }
+    
+    return { w: 64, h: 32 };
+  }
+
+  
+  function processGif(data) {
+    const { w: targetW, h: targetH } = getSelectedMatrixSize();  // <-- NEW
+    document.getElementById('gif-status').innerText = "Processing...";
+
+    try {
+      const gif = new GifReader(data);
+      const numFrames = gif.numFrames();
+
+      // Total size:
+      // 4 bytes header (W,H,frames,flags) +
+      // per frame: 2 bytes delay + (targetW * targetH * 2) bytes RGB565
+      const totalSize = 4 + (numFrames * (2 + (targetW * targetH * 2)));
+      const outputBuffer = new Uint8Array(totalSize);
+      let ptr = 0;
+
+      // Header: width, height, frame count, flags (unchanged behavior)
+      outputBuffer[ptr++] = targetW;           // <-- NEW
+      outputBuffer[ptr++] = targetH;           // <-- NEW
+      outputBuffer[ptr++] = numFrames;
+      outputBuffer[ptr++] = 0;                 // flags/reserved
+
+      // Work canvas: original GIF frame size
+      const cvs = document.createElement('canvas');
+      cvs.width = gif.width; cvs.height = gif.height;
+      const ctx = cvs.getContext('2d');
+
+      // Preview canvas: target matrix size
+      const previewCvs = document.getElementById('preview');
+      previewCvs.style.display = 'inline-block';
+      previewCvs.width = targetW;              // <-- NEW
+      previewCvs.height = targetH;             // <-- NEW
+      const previewCtx = previewCvs.getContext('2d');
+
+      const resizeMode = document.getElementById('resize-mode').value;
+      const frameInfo = new Uint8Array(gif.width * gif.height * 4);
+
+      for (let i = 0; i < numFrames; i++) {
+        // Decode frame into RGBA
+        gif.decodeAndBlitFrameRGBA(i, frameInfo);
+
+        // Draw original frame into work canvas
+        const imgData = new ImageData(new Uint8ClampedArray(frameInfo), gif.width, gif.height);
+        ctx.putImageData(imgData, 0, 0);
+
+        // Clear preview canvas (background black like your original)
+        previewCtx.fillStyle = "black";
+        previewCtx.fillRect(0, 0, targetW, targetH);              // <-- NEW
+
+        // Compute draw rect based on resize mode
+        let dx = 0, dy = 0, dw = targetW, dh = targetH;           // <-- NEW
+
+        if (resizeMode === 'fit') {
+          const scale = Math.min(targetW / gif.width, targetH / gif.height);
+          dw = gif.width * scale; dh = gif.height * scale;
+          dx = (targetW - dw) / 2; dy = (targetH - dh) / 2;
+        } else if (resizeMode === 'crop') {
+          const scale = Math.max(targetW / gif.width, targetH / gif.height);
+          dw = gif.width * scale; dh = gif.height * scale;
+          dx = (targetW - dw) / 2; dy = (targetH - dh) / 2;
+        }
+        // 'stretch' uses full targetW/targetH (default above)
+
+        // Draw resized frame to preview canvas
+        previewCtx.drawImage(cvs, dx, dy, dw, dh);
+
+        // Read final target-sized RGBA
+        const finalData = previewCtx.getImageData(0, 0, targetW, targetH).data; // <-- NEW
+
+        // Delay: same as your logic (GIF delay*10, minimum 20ms)
+        const delay = Math.max(gif.frameInfo(i).delay * 10, 20);
+        outputBuffer[ptr++] = delay & 0xFF;
+        outputBuffer[ptr++] = (delay >> 8) & 0xFF;
+
+        // Convert RGBA -> RGB565 (little-endian in your writer)
+        for (let p = 0; p < finalData.length; p += 4) {
+          const r = finalData[p], g = finalData[p + 1], b = finalData[p + 2];
+          const rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+          outputBuffer[ptr++] = rgb565 & 0xFF;
+          outputBuffer[ptr++] = (rgb565 >> 8) & 0xFF;
+        }
+      }
+
+      processedBlob = new Blob([outputBuffer], { type: "application/octet-stream" });
+      document.getElementById('gif-status').innerText = `Ready! (${(totalSize/1024).toFixed(1)} KB)`;
+      document.getElementById('upload-btn').disabled = false;
+
+    } catch (err) {
+      console.error(err);
+      alert("Error parsing GIF.");
+    }
+  }
+
+
+  function deleteGif() { if(confirm("Delete current GIF?")) fetch('/api/delete_gif', { method: 'POST' }).then(() => alert("Deleted")); }
+  function uploadGif() {
+    const btn = document.getElementById('upload-btn'); btn.disabled = true; btn.innerText = "Uploading...";
+    const fd = new FormData(); fd.append("file", processedBlob, "anim.bin");
+    fetch('/upload', { method: 'POST', body: fd }).then(() => { btn.innerText = "Complete!"; setTimeout(() => btn.disabled=false, 2000); });
+  }
+
+  window.onload = loadSettings;
+</script>
+
+</body>
+</html>
