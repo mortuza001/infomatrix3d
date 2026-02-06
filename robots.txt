@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemaps tell Google where to find your content
+Sitemap: https://www.infomatrix3d.com/sitemap.xml
