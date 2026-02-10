@@ -132,6 +132,13 @@
 
 </div>
 
+<div style="display: flex; gap: 15px; align-items: flex-end;">
+<div style="flex-grow: 1;">
+  <label>OHLC - TwelveData API Key (Optional/Secondary)</label>
+  <input type="text" id="twelveDataKey" placeholder="API Key - Get free at twelvedata.com">
+</div>  
+</div>
+
   <div><label>Stock Alerts</label>
 	    <input type="text" id="sAlerts" maxlength="320" placeholder="AAPL > 300, TSLA < 250, ETH-USD < 2005" oninput="this.value = this.value.toUpperCase()"></div>
 
@@ -154,6 +161,13 @@
 	
 	<label>NHL Teams (comma separated)</label>
     <input type="text" id="nhlTeam" placeholder="TOR,VGK,MTL or ALL" oninput="this.value = this.value.toUpperCase()" />
+	
+	<label>MLB Teams (comma separated)</label>
+    <input type="text" id="mlbTeam" placeholder="NYY,LAD,TOR or ALL" oninput="this.value = this.value.toUpperCase()" />
+	
+	<label>Cricket Team or Series (comma separated)</label>
+    <input type="text" id="cricketKeyword" placeholder="CANADA, ICC, WORLD CUP or ALL" />
+	
 	<p style="font-size: 9px;"><i>Reboot is required to initialize any Sports or Stock logo</i>.</p>
   </div>
 
@@ -249,33 +263,42 @@
           <span>Stocks</span>
           <input type="number" id="dStock">
         </label>
-        <label style="flex:1; min-width: 80px;">
+        <label style="flex:1; min-width: 60px;">
           <span>NBA</span>
           <input type="number" id="dNba">
         </label>
-        <label style="flex:1; min-width: 80px;">
+        <label style="flex:1; min-width: 60px;">
           <span>EPL</span>
           <input type="number" id="durEpl">
         </label>
-        <label style="flex:1; min-width: 80px;">
+        <label style="flex:1; min-width: 60px;">
           <span>NFL</span>
           <input type="number" id="dNfl">
+        </label>
+		<label style="flex:1">
+          <span>NHL</span>
+          <input type="number" id="dNhl">
+        </label>
+		<label style="flex:1">
+          <span>MLB</span>
+          <input type="number" id="dMlb">
         </label>
         <label style="flex:1; min-width: 80px;">
           <span>Weather</span>
           <input type="number" id="dWeath">
         </label>
-        <label style="flex:1; min-width: 80px;">
+        <label style="flex:1; min-width: 60px;">
           <span>Msg</span>
           <input type="number" id="dMsg">
         </label>
-        <label style="flex:1; min-width: 80px;">
+        <label style="flex:1; min-width: 60px;">
           <span>GIF</span>
           <input type="number" id="dGif">
         </label>
+
 		<label style="flex:1">
-          <span>NHL</span>
-          <input type="number" id="dNhl">
+          <span>Cricket</span>
+          <input type="number" id="dCrkt">
         </label>
       </div>
     </fieldset>
@@ -313,7 +336,7 @@
   
   
 <div class="footer">
-  <span id="appVersion" data-version="1.12.1">infomatrix3d.com - v.1.12.1</span>
+  <span id="appVersion" data-version="1.14.1">infomatrix3d.com - v.1.14.1</span>
 </div>
 
 <div id="updateBanner" class="update-banner" role="status" aria-live="polite">
@@ -397,6 +420,7 @@
 		if(document.getElementById('sAlerts')) document.getElementById('sAlerts').value = data.sAlerts || "";
         
         if(document.getElementById('finnhub')) document.getElementById('finnhub').value = data.finnhub || "";
+		if(document.getElementById('twelveDataKey')) document.getElementById('twelveDataKey').value = data.twelveDataKey || "";
         if(document.getElementById('isUSA')) document.getElementById('isUSA').checked = (data.isUSA === true);
         
         if(document.getElementById('city')) document.getElementById('city').value = data.city || "";
@@ -417,6 +441,9 @@
         // Sports
         if(document.getElementById('nhlTeam')) document.getElementById('nhlTeam').value = data.nhlTeam || "";
         if(document.getElementById('dNhl')) document.getElementById('dNhl').value = data.dNhl || 30;
+		
+		if(document.getElementById('mlbTeam')) document.getElementById('mlbTeam').value = data.mlbTeam || "";
+        if(document.getElementById('dMlb')) document.getElementById('dMlb').value = data.dMlb || 30;
 
         if(document.getElementById('nbaTeam')) document.getElementById('nbaTeam').value = data.nbaTeam || "";
         if(document.getElementById('dNba')) document.getElementById('dNba').value = data.dNba || 30;
@@ -426,6 +453,9 @@
 
         if(document.getElementById('nflTeam')) document.getElementById('nflTeam').value = data.nflTeam || "";
         if(document.getElementById('dNfl')) document.getElementById('dNfl').value = data.dNfl || 30;
+		
+		if(document.getElementById('cricketKeyword')) document.getElementById('cricketKeyword').value = data.cricketKeyword || "";
+        if(document.getElementById('dCrkt')) document.getElementById('dCrkt').value = data.dCrkt || 30;
         
         if(document.getElementById('units')) document.getElementById('units').value = (data.metric !== false) ? "metric" : "imperial";
 
@@ -485,6 +515,7 @@
 	appendIf('splitScreen', 'splitScreen', true);
 	appendIf('sAlerts', 'sAlerts');
     appendIf('finnhub', 'finnhub');
+	appendIf('twelveDataKey', 'twelveDataKey');
     appendIf('isUSA', 'isUSA', true);
     appendIf('city', 'city');
     appendIf('units', 'units');
@@ -502,8 +533,14 @@
     appendIf('durEpl', 'durEpl');
     appendIf('nflTeam', 'nflTeam');
     appendIf('dNfl', 'dNfl');
+	
+	    appendIf('mlbTeam', 'mlbTeam');
+    appendIf('dMlb', 'dMlb');
+	
     appendIf('nhlTeam', 'nhlTeam');
     appendIf('dNhl', 'dNhl');
+	    appendIf('cricketKeyword', 'cricketKeyword');
+    appendIf('dCrkt', 'dCrkt');
 
     for(let i=1; i<=3; i++) {
       let mode = document.getElementById("mode"+i).value;
