@@ -208,14 +208,12 @@
                 <img src="image-4.JPEG" class="slide-asset" alt="Product close up">
             </div>
             
-            <button class="prev" onclick="plusSlides(-1)">&#10094;</button>
-            <button class="next" onclick="plusSlides(1)">&#10095;</button>
+
+<button class="prev" type="button" aria-label="Previous slide">&#10094;</button>
+        <button class="next" type="button" aria-label="Next slide">&#10095;</button>
+
         </div>
-        <div class="dots-container">
-            <span class="dot" onclick="currentSlide(1)"></span>
-            <span class="dot" onclick="currentSlide(2)"></span>
-            <span class="dot" onclick="currentSlide(3)"></span>
-        </div>
+  <div class="dots-container" id="dots"></div>
     </div>
 
     <div class="features">
@@ -358,23 +356,72 @@
 </footer>
 
 <script>
-    let slideIndex = 1;
-    showSlides(slideIndex);
 
-    function plusSlides(n) { showSlides(slideIndex += n); }
-    function currentSlide(n) { showSlides(slideIndex = n); }
 
-    function showSlides(n) {
-        let i;
-        let slides = document.getElementsByClassName("mySlides");
-        let dots = document.getElementsByClassName("dot");
-        if (n > slides.length) {slideIndex = 1}    
-        if (n < 1) {slideIndex = slides.length}
-        for (i = 0; i < slides.length; i++) { slides[i].style.display = "none"; }
-        for (i = 0; i < dots.length; i++) { dots[i].className = dots[i].className.replace(" active", ""); }
-        slides[slideIndex-1].style.display = "block";  
-        dots[slideIndex-1].className += " active";
+
+    function showSlide(index) {
+      if (slides.length === 0) return;
+
+      // Wrap around
+      if (index >= slides.length) index = 0;
+      if (index < 0) index = slides.length - 1;
+
+      // Stop YouTube playback on previous slide (if any)
+      stopYouTubeInSlide(slides[slideIndex]);
+
+      // Hide all slides
+      slides.forEach(s => (s.style.display = "none"));
+      dots.forEach(d => d.classList.remove("active"));
+
+      // Show current
+      slides[index].style.display = "block";
+      dots[index].classList.add("active");
+
+      slideIndex = index;
     }
+
+    function nextSlide() { showSlide(slideIndex + 1); }
+    function prevSlide() { showSlide(slideIndex - 1); }
+
+    function goToSlide(i) { showSlide(i); }
+
+    function startAuto() {
+      stopAuto();
+      timer = setInterval(() => nextSlide(), intervalMs);
+    }
+
+    function stopAuto() {
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+
+    function restartAuto() {
+      startAuto();
+    }
+
+    // Stop YouTube when leaving that slide by resetting iframe src
+    function stopYouTubeInSlide(slideEl) {
+      if (!slideEl) return;
+      const iframe = slideEl.querySelector("iframe.yt-frame");
+      if (!iframe) return;
+
+      // Reset the src to stop playback when hidden
+      const src = iframe.getAttribute("src");
+      iframe.setAttribute("src", src);
+    }
+
+    // Wire buttons
+    prevBtn.addEventListener("click", () => { prevSlide(); restartAuto(); });
+    nextBtn.addEventListener("click", () => { nextSlide(); restartAuto(); });
+
+    // Pause on hover (nice UX)
+    heroMedia.addEventListener("mouseenter", stopAuto);
+    heroMedia.addEventListener("mouseleave", startAuto);
+
+    // Start
+    showSlide(0);
+    startAuto();
+
 </script>
 
 </body>
