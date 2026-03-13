@@ -86,6 +86,25 @@
     display: block; /* Change from flex to block for easier image scaling */
 }
 
+         /* Ensure every slide asset fills the hero-media width */
+.slide-asset {
+  width: 100%;
+  display: block;
+  border: 0;
+}
+
+/* Keep images behaving well */
+.mySlides img.slide-asset {
+  height: auto;
+  object-fit: contain;
+}
+
+/* Give iframes a stable height using aspect-ratio */
+.mySlides iframe.slide-asset {
+  aspect-ratio: 16 / 9;   /* or whatever matches your media */
+  height: auto;
+}
+
 /* Add this new rule to force the image to behave */
 .hero-media img {
     width: 100%;
