@@ -69,9 +69,12 @@
     InfoMatrix Dashboard
   </h2>
 
-  <div class="section">
-    <button onclick="toggleFocus()" style="background: #e67e22;">Start/Stop Focus Mode</button>
+  
+  <div class="section" style="display: flex; gap: 10px;">
+    <button onclick="toggleFocus()" style="background: #e67e22; flex: 1;">Focus Mode</button>
+    <button onclick="toggleVisualizer()" style="background: #8e44ad; flex: 1;">Visualizer Mode</button>
   </div>
+  
 
 <div class="section">
     <label>Stock Symbols (comma separated)</label>
@@ -84,11 +87,14 @@
     <div style="display: flex; gap: 15px; align-items: flex-end;">
       <div style="flex-grow: 1;">
         <label>Graph Range</label>
-        <select id="range" style="margin-bottom: 0;"> <option value="1h">1 Hour</option>
+        <select id="range" style="margin-bottom: 0;"> 
+		
+		<option value="1h">1 Hour</option>
 		<option value="4h">4 Hour</option>
           <option value="1d">1 Day</option>
           <option value="1mo">1 Month</option>
           <option value="1y">1 Year</option>
+		  
           <option value="livegrid">Grid (Text Only)</option>
         </select>
       </div>
@@ -104,6 +110,12 @@
       <div style="padding-bottom: 10px;"> <label style="cursor: pointer; margin: 0;">
           <input type="checkbox" id="stockLogo" style="width: auto; margin-right: 5px; vertical-align: middle;"> 
           Logo
+        </label>
+      </div>
+	  
+	  	  	        <div style="padding-bottom: 10px;"> <label style="cursor: pointer; margin: 0;">
+          <input type="checkbox" id="splitScreen" style="width: auto; margin-right: 5px; vertical-align: middle;"> 
+          4Split
         </label>
       </div>
 
@@ -166,10 +178,50 @@
     <input type="text" id="mlbTeam" placeholder="NYY,LAD,TOR or ALL" oninput="this.value = this.value.toUpperCase()" />
 	
 	<label>Cricket Team or Series (comma separated)</label>
-    <input type="text" id="cricketKeyword" placeholder="CANADA, ICC, WORLD CUP or ALL" />
+    <input type="text" id="cricketKeyword" placeholder="ENGLAND, ICC, TOP or ALL" />
 	
 	<p style="font-size: 9px;"><i>Reboot is required to initialize any Sports or Stock logo</i>.</p>
   </div>
+  
+  <div class="section">
+  <label>Commute Configuration - Key</label>
+  <input type="text" id="gKey" placeholder="Google Routes API Key">
+  
+  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+    <div style="flex: 1;">
+      <label>Origin (Home)</label>
+      <input type="text" id="home" placeholder="Address or Lat,Long">
+    </div>
+    <div style="flex: 1;">
+      <label>Destination (Work)</label>
+      <input type="text" id="work" placeholder="Address or Lat,Long">
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 10px; align-items: flex-end;">
+    <div style="flex: 1;">
+      <label>Transport Mode</label>
+      <select id="cMode" onchange="toggleStationField()">
+        <option value="Car">Private Vehicle</option>
+        <option value="Bus">Bus</option>
+        <option value="Rail_Transit">Rail (Subway, LRT)</option>
+        <option value="Train">Train (Park & Ride)</option>
+      </select>
+    </div>
+    <div style="flex: 1;">
+      <label>Active Window (0-23 Hours)</label>
+      <div style="display: flex; gap: 5px;">
+        <input type="number" id="cStart" placeholder="7" min="0" max="23">
+        <input type="number" id="cEnd" placeholder="9" min="0" max="23">
+      </div>
+    </div>
+  </div>
+
+  <div id="station-group" style="display:none; margin-top: 10px;">
+    <label>Station Address (for Park & Ride)</label>
+    <input type="text" id="stat" placeholder="e.g. Union Station GO">
+  </div>
+</div>
 
   <div class="section">
     <label>City Weather (e.g. Toronto,CA)</label>
@@ -185,9 +237,15 @@
       </div>
       
       <div style="flex: 1;">
-        <label>Timezone</label>
+        <label>Timezone Offset</label>
         <input type="number" id="tz" value="-5">
+         <label style="cursor: pointer; margin: 0;">
+          <input type="checkbox" id="autoTZ" style="width: auto; margin-right: 5px; vertical-align: middle;"> 
+          Auto Timezone
+        </label>
       </div>
+	  
+	   
     </div>
   </div>
 
@@ -275,19 +333,20 @@
           <span>GIF</span>
           <input type="number" id="dGif">
         </label>
-				<label style="flex:1">
-          <span>Cricket</span>
-          <input type="number" id="dCrkt">
+		<label style="flex:1">
+          <span>Commute</span>
+          <input type="number" id="dCom">
         </label>
-        <label style="flex:1; min-width: 60px;">
+
+        <label style="flex:1; min-width: 50px;">
           <span>NBA</span>
           <input type="number" id="dNba">
         </label>
-        <label style="flex:1; min-width: 60px;">
+        <label style="flex:1; min-width: 50px;">
           <span>EPL</span>
           <input type="number" id="durEpl">
         </label>
-        <label style="flex:1; min-width: 60px;">
+        <label style="flex:1; min-width: 50px;">
           <span>NFL</span>
           <input type="number" id="dNfl">
         </label>
@@ -298,6 +357,10 @@
 		<label style="flex:1">
           <span>MLB</span>
           <input type="number" id="dMlb">
+        </label>
+		<label style="flex:1">
+          <span>Cricket</span>
+          <input type="number" id="dCrkt">
         </label>
 
 
@@ -338,7 +401,7 @@
   
   
 <div class="footer">
-  <span id="appVersion" data-version="1.14.1">infomatrix3d.com - v.1.14.1</span>
+  <span id="appVersion" data-version="1.18.3"><a href="https://www.infomatrix3d.com/help.html"  target="_blank">Support - infomatrix3d.com - v.1.18.3</a></span>
 </div>
 
 <div id="updateBanner" class="update-banner" role="status" aria-live="polite">
@@ -426,6 +489,7 @@
         if(document.getElementById('isUSA')) document.getElementById('isUSA').checked = (data.isUSA === true);
         
         if(document.getElementById('city')) document.getElementById('city').value = data.city || "";
+		if(document.getElementById('autoTZ')) document.getElementById('autoTZ').checked = (data.autoTZ === true);
         if(document.getElementById('tz')) document.getElementById('tz').value = data.tz || "-5";
         if(document.getElementById('range')) document.getElementById('range').value = data.range || "1d";
 		if(document.getElementById('graphtype')) document.getElementById('graphtype').value = data.graphtype || "Both";
@@ -436,9 +500,24 @@
         if(document.getElementById('dWeath')) document.getElementById('dWeath').value = data.dWeath || 10;
         if(document.getElementById('dMsg')) document.getElementById('dMsg').value = data.dMsg || 15;
         if(document.getElementById('dGif')) document.getElementById('dGif').value = data.dGif || 30;
+		    
         
         if(document.getElementById('fWork')) document.getElementById('fWork').value = data.fWork || 25;
         if(document.getElementById('fBrk')) document.getElementById('fBrk').value  = data.fBrk  || 5;
+		
+		
+				// Commute Loading
+		if(document.getElementById('gKey'))   document.getElementById('gKey').value = data.gKey || "";
+		if(document.getElementById('home'))   document.getElementById('home').value = data.home || "";
+		if(document.getElementById('work'))   document.getElementById('work').value = data.work || "";
+		if(document.getElementById('stat'))   document.getElementById('stat').value = data.stat || "";
+		if(document.getElementById('cMode')) {
+			document.getElementById('cMode').value = data.cMode || "Car";
+			toggleStationField(); // Initialize visibility
+		}
+		if(document.getElementById('cStart')) document.getElementById('cStart').value = data.cStart ?? 7;
+		if(document.getElementById('cEnd'))   document.getElementById('cEnd').value = data.cEnd ?? 9;
+		if(document.getElementById('dCom')) document.getElementById('dCom').value = data.dCom || 30;
 
         // Sports
         if(document.getElementById('nhlTeam')) document.getElementById('nhlTeam').value = data.nhlTeam || "";
@@ -522,6 +601,7 @@
     appendIf('city', 'city');
     appendIf('units', 'units');
     appendIf('tz', 'tz');
+	appendIf('autoTZ', 'autoTZ', true);
     appendIf('range', 'range');
 	appendIf('graphtype', 'graphtype');
     appendIf('cexch', 'cexch');
@@ -543,6 +623,16 @@
     appendIf('dNhl', 'dNhl');
 	    appendIf('cricketKeyword', 'cricketKeyword');
     appendIf('dCrkt', 'dCrkt');
+	
+		// Commute Saving
+	appendIf('gKey', 'gKey');
+	appendIf('home', 'home');
+	appendIf('work', 'work');
+	appendIf('stat', 'stat');
+	appendIf('cMode', 'cMode');
+	appendIf('cStart', 'cStart');
+	appendIf('cEnd', 'cEnd');
+	appendIf('dCom', 'dCom');
 
     for(let i=1; i<=3; i++) {
       let mode = document.getElementById("mode"+i).value;
@@ -603,6 +693,11 @@
            setTimeout(() => location.reload(), 15000);
          });
      }
+   }
+   
+   function toggleStationField() {
+    const mode = document.getElementById('cMode').value;
+    document.getElementById('station-group').style.display = (mode === 'Train') ? 'block' : 'none';
    }
    
    
@@ -726,6 +821,16 @@
     
     return { w: 64, h: 32 };
   }
+  
+  function toggleVisualizer() {
+    fetch('/api/visualizer/toggle', { method: 'POST' })
+      .then(res => res.text())
+      .then(txt => {
+          // Optional: Provide visual feedback
+          alert("Visualizer Mode: " + txt);
+      })
+      .catch(err => alert("Error toggling Visualizer: " + err));
+   }
 
   
   function processGif(data) {
