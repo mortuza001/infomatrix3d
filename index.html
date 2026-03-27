@@ -60,7 +60,6 @@
       margin-bottom: 30px;
     }
 
-    /* Etsy button */
     .btn-etsy {
       background-color: var(--etsy);
       color: white;
@@ -87,7 +86,6 @@
       color: #64748b;
     }
 
-    /* HERO / SLIDESHOW */
     .hero-media {
       width: 100%;
       background: #000;
@@ -99,162 +97,79 @@
       display: block;
     }
 
-    .slideshow-container {
-      position: relative;
-      width: 100%;
-    }
+    .slideshow-container { position: relative; width: 100%; }
+    .mySlides { display: none; width: 100%; }
+    .slide-asset { width: 100%; display: block; border: 0; }
+    .mySlides img.slide-asset { height: auto; object-fit: contain; }
 
-    .mySlides {
-      display: none;
-      width: 100%;
-    }
+    .video-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+    .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
 
-    /* assets */
-    .slide-asset {
-      width: 100%;
-      display: block;
-      border: 0;
-    }
-
-    /* images behave nicely */
-    .mySlides img.slide-asset {
-      height: auto;
-      object-fit: contain;
-    }
-
-    /* Responsive YouTube wrapper (prevents iframe from shrinking) */
-    .video-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-    }
-
-    .video-wrap iframe {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-      display: block;
-    }
-
-    /* Prev / Next buttons */
     .prev, .next {
-      cursor: pointer;
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      padding: 14px 16px;
-      color: #fff;
-      background: rgba(0, 0, 0, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 999px;
-      user-select: none;
-      z-index: 10;
-      transition: background 0.2s ease, transform 0.2s ease;
+      cursor: pointer; position: absolute; top: 50%; transform: translateY(-50%);
+      padding: 14px 16px; color: #fff; background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 999px;
+      user-select: none; z-index: 10; transition: background 0.2s ease, transform 0.2s ease;
     }
 
-    .prev:hover, .next:hover {
-      background: rgba(0, 0, 0, 0.7);
-      transform: translateY(-50%) scale(1.05);
-    }
-
+    .prev:hover, .next:hover { background: rgba(0, 0, 0, 0.7); transform: translateY(-50%) scale(1.05); }
     .prev { left: 12px; }
     .next { right: 12px; }
 
-    /* Dots */
-    .dots-container {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      padding: 12px 0 14px;
-      background: rgba(0,0,0,0.15);
-      border-top: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .dot {
-      cursor: pointer;
-      height: 10px;
-      width: 10px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.35);
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-
+    .dots-container { display: flex; justify-content: center; gap: 10px; padding: 12px 0 14px; background: rgba(0,0,0,0.15); border-top: 1px solid rgba(255,255,255,0.06); }
+    .dot { cursor: pointer; height: 10px; width: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); transition: background 0.2s ease, transform 0.2s ease; }
     .dot:hover { transform: scale(1.2); }
     .dot.active { background: var(--primary); }
 
-    /* optional fade animation */
     .fade { animation: fade 0.35s ease; }
     @keyframes fade { from { opacity: 0.25; } to { opacity: 1; } }
 
-    /* Responsive adjustments */
     @media (max-width: 600px) {
       h1 { font-size: 2.2rem; }
       header { padding: 40px 15px; }
       .btn-etsy { width: 80%; text-align: center; }
+      .quick-links { gap: 20px !important; }
     }
 
-    /* FEATURES */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      margin: 50px 0;
-    }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 50px 0; }
+    .feature-card { background: var(--card); padding: 30px; border-radius: 12px; text-align: center; border: 1px solid #222; }
+    .feature-card i { color: var(--primary); font-size: 2rem; margin-bottom: 15px; }
 
-    .feature-card {
-      background: var(--card);
-      padding: 30px;
-      border-radius: 12px;
+    .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
+    .detail-item { background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid #222; }
+    .detail-item h4 { margin-top: 0; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+    .demo-link { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; }
+
+    .dimensions-footer { text-align: center; margin-top: 40px; color: var(--muted); font-size: 0.85rem; }
+
+    /* QUICK LINKS SECTION */
+    .quick-links {
       text-align: center;
-      border: 1px solid #222;
+      margin: 60px 0;
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      padding: 30px 20px;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
     }
-
-    .feature-card i {
+    .quick-links a {
       color: var(--primary);
-      font-size: 2rem;
-      margin-bottom: 15px;
-    }
-
-    /* CONTACT */
-    .contact-section {
-      background: var(--card);
-      padding: 40px;
-      border-radius: 12px;
-      margin-top: 60px;
-      border: 1px solid #222;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      background: #000;
-      border: 1px solid #333;
-      color: white;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
-
-    .btn-send {
-      background: var(--primary);
-      color: #000;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 6px;
+      text-decoration: none;
       font-weight: bold;
-      cursor: pointer;
-      width: 100%;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: opacity 0.2s;
     }
+    .quick-links a:hover { opacity: 0.8; }
 
-    footer {
-      text-align: center;
-      padding: 60px;
-      color: #444;
-      font-size: 0.8rem;
-    }
+    .contact-section { background: var(--card); padding: 40px; border-radius: 12px; margin-top: 60px; border: 1px solid #222; }
+    input, textarea { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 6px; box-sizing: border-box; }
+    .btn-send { background: var(--primary); color: #000; border: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+
+    footer { text-align: center; padding: 60px; color: #444; font-size: 0.8rem; }
   </style>
 </head>
 
@@ -263,9 +178,7 @@
   <header>
     <h1>InfoMatrix</h1>
     <p class="tagline">The Ultimate Wi‑Fi Desktop Ticker for Sports, Stocks and Crypto</p>
-    <a href="https://www.etsy.com/ca/listing/4428438419/stock-crypto-sports-live-ticker-text?etsrc=sdt"
-       target="_blank"
-       class="btn-etsy">
+    <a href="https://www.etsy.com/ca/listing/4428438419/stock-crypto-sports-live-ticker-text?etsrc=sdt" target="_blank" class="btn-etsy">
       <i class="fab fa-etsy"></i> Order on Etsy
     </a>
     <span class="trust-badge">🔒 Secure Checkout via Etsy Payments</span>
@@ -273,60 +186,42 @@
 
   <div class="container">
 
-    <!-- HERO SLIDESHOW -->
     <div class="hero-media" id="heroMedia">
       <div class="slideshow-container" id="slideshow">
-
         <div class="mySlides fade">
           <img src="image-1.jpg" class="slide-asset" alt="Desk setup view" />
         </div>
-
         <div class="mySlides fade">
           <img src="matrix-nba.jpg" class="slide-asset" alt="Product Sports Score" />
         </div>
-
-        <!-- YouTube slide (responsive + stoppable) -->
         <div class="mySlides fade">
           <div class="video-wrap">
-            <iframe
-              class="yt-frame"
-              src="https://www.youtube.com/embed/CIzUx96CPGs?autoplay=1&mute=1&loop=1&playlist=CIzUx96CPGs&controls=0&rel=0"
-              title="InfoMatrix Demo"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowfullscreen>
-            </iframe>
+            <iframe class="yt-frame" src="https://www.youtube.com/embed/CIzUx96CPGs?autoplay=1&mute=1&loop=1&playlist=CIzUx96CPGs&controls=0&rel=0" title="InfoMatrix Demo" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
           </div>
         </div>
-
         <div class="mySlides fade">
           <img src="matrix-epl.jpg" class="slide-asset" alt="Product Sports Score" />
         </div>
-
         <div class="mySlides fade">
           <img src="image-4.JPEG" class="slide-asset" alt="Product close up" />
         </div>
-
         <button class="prev" type="button" aria-label="Previous slide">&#10094;</button>
         <button class="next" type="button" aria-label="Next slide">&#10095;</button>
       </div>
-
       <div class="dots-container" id="dots"></div>
     </div>
 
-    <!-- FEATURES CARDS -->
     <div class="features">
       <div class="feature-card">
         <i class="fas fa-wifi"></i>
         <h3>Wi‑Fi Connected</h3>
         <p>Stand-alone device. No PC connection or phone apps required for daily use.</p>
       </div>
-
       <div class="feature-card">
         <i class="fas fa-chart-line"></i>
         <h3>Live Data</h3>
         <p>Track Market and Sports with custom settings.</p>
       </div>
-
       <div class="feature-card">
         <i class="fas fa-microchip"></i>
         <h3>Zero Subscriptions</h3>
@@ -334,39 +229,41 @@
       </div>
     </div>
 
-    <!-- (Your long Features + Specs + Contact content continues as-is) -->
     <h2 style="text-align:center; margin-top:60px;">Features</h2>
-
     <div class="details-grid">
       <div class="detail-item">
         <h4><i class="fas fa-chart-line"></i> Market Tracking</h4>
         <p>Track stocks and crypto via Binance, Coinbase, Yahoo, and Finnhub. View 1H to 1Y Line & Candlestick graphs with custom price buzzer alerts</p>
       </div>
-
       <div class="detail-item">
         <h4><i class="fas fa-trophy"></i> Live Sports</h4>
-        <p>Real-time scores for NBA, NFL, EPL & NHL. Our dedicated server ensures reliable data delivery. More leagues coming soon via free updates.</p>
+        <p>Real-time scores for NBA, NFL, EPL & NHL. Our dedicated server ensures reliable data delivery. More leagues coming soon.</p>
+      </div>
+	  <div class="detail-item">
+        <h4><i class="fas fa-wave-square"></i> Visualizer Mode</h4>
+        <p>Bring your desk to life with audio-reactive effects and custom light patterns. Syncs with your environment for a dynamic experience.</p>
       </div>
 
       <div class="detail-item">
-        <h4><i class="fas fa-bullhorn"></i> Scrolling Text & Animations</h4>
-        <p>Display custom promos (GIF), announcements, or RSS feeds with smooth animations. Perfect for offices or home notifications.</p>
+        <h4><i class="fas fa-bus-alt"></i> Commute Tracker</h4>
+        <p>Stay ahead of your schedule with real-time transit tracking. View live arrival times for local buses and trains directly on your desk.</p>
       </div>
-
+      <div class="detail-item">
+        <h4><i class="fas fa-bullhorn"></i> Scrolling Text</h4>
+        <p>Display custom promos, announcements, or RSS feeds with smooth animations. Perfect for offices.</p>
+      </div>
       <div class="detail-item">
         <h4><i class="fas fa-clock"></i> Time & Focus</h4>
-        <p>Integrated time and weather display. Includes a <strong>Pomodoro Mode</strong> to boost your focus and productivity during work sessions.</p>
+        <p>Integrated time and weather display. Includes a <strong>Pomodoro Mode</strong> to boost your productivity.</p>
       </div>
-
       <div class="detail-item">
         <h4><i class="fas fa-mobile-alt"></i> Easy Management</h4>
-        <p>Manage settings instantly via a simple web interface on your phone or PC. No app store downloads required.</p>
+        <p>Manage settings instantly via a simple web interface on your phone or PC. No app downloads required.</p>
         <a href="https://www.infomatrix3d.com/demo.html" class="demo-link" target="_blank">Try the Demo →</a>
       </div>
-
       <div class="detail-item">
         <h4><i class="fas fa-shield-alt"></i> Built to Last</h4>
-        <p>Premium hardware designed for 24/7 reliability. Includes free lifetime software upgrades to keep your device current.</p>
+        <p>Premium hardware designed for 24/7 reliability. Includes free lifetime software upgrades.</p>
       </div>
     </div>
 
@@ -377,7 +274,6 @@
 
     <section style="margin-top: 50px; overflow-x: auto;">
       <h2 style="text-align: center; margin-bottom: 30px;">Model Specifications</h2>
-
       <table style="width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222;">
         <thead>
           <tr style="background: #111; color: var(--primary); text-align: left;">
@@ -388,53 +284,28 @@
           </tr>
         </thead>
         <tbody style="font-size: 0.95rem;">
-          <tr style="border-bottom: 1px solid #222;">
-            <td style="padding: 15px; font-weight: bold;">M9-64</td>
-            <td style="padding: 15px;">Medium</td>
-            <td style="padding: 15px;">64x32 px</td>
-            <td style="padding: 15px; color: #94a3b8;">Standard</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #222;">
-            <td style="padding: 15px; font-weight: bold;">M12-64</td>
-            <td style="padding: 15px;">Large</td>
-            <td style="padding: 15px;">64x32 px</td>
-            <td style="padding: 15px; color: #94a3b8;">Standard</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #222;">
-            <td style="padding: 15px; font-weight: bold;">M12-80</td>
-            <td style="padding: 15px;">Large</td>
-            <td style="padding: 15px;">80x40 px</td>
-            <td style="padding: 15px; color: #94a3b8;">Standard</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #222; background: rgba(0, 209, 178, 0.05);">
-            <td style="padding: 15px; font-weight: bold;">X9-64</td>
-            <td style="padding: 15px;">Medium</td>
-            <td style="padding: 15px;">64x32 px</td>
-            <td style="padding: 15px; color: var(--primary);">Advanced</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #222; background: rgba(0, 209, 178, 0.05);">
-            <td style="padding: 15px; font-weight: bold;">X12-80</td>
-            <td style="padding: 15px;">Large</td>
-            <td style="padding: 15px;">80x40 px</td>
-            <td style="padding: 15px; color: var(--primary);">Advanced</td>
-          </tr>
-          <tr style="background: rgba(0, 209, 178, 0.1);">
-            <td style="padding: 15px; font-weight: bold;">X12-128</td>
-            <td style="padding: 15px;">Large</td>
-            <td style="padding: 15px;">128x64 px</td>
-            <td style="padding: 15px; color: var(--primary);">Advanced</td>
-          </tr>
+          <tr style="border-bottom: 1px solid #222;"><td>M9-64</td><td>Medium</td><td>64x32 px</td><td style="color: #94a3b8;">Standard</td></tr>
+          <tr style="border-bottom: 1px solid #222;"><td>M12-64</td><td>Large</td><td>64x32 px</td><td style="color: #94a3b8;">Standard</td></tr>
+          <tr style="border-bottom: 1px solid #222;"><td>M12-80</td><td>Large</td><td>80x40 px</td><td style="color: #94a3b8;">Standard</td></tr>
+          <tr style="border-bottom: 1px solid #222; background: rgba(0, 209, 178, 0.05);"><td>X9-64</td><td>Medium</td><td>64x32 px</td><td style="color: var(--primary);">Advanced</td></tr>
+          <tr style="border-bottom: 1px solid #222; background: rgba(0, 209, 178, 0.05);"><td>X12-80</td><td>Large</td><td>80x40 px</td><td style="color: var(--primary);">Advanced</td></tr>
+          <tr style="background: rgba(0, 209, 178, 0.1);"><td>X12-128</td><td>Large</td><td>128x64 px</td><td style="color: var(--primary);">Advanced</td></tr>
         </tbody>
       </table>
-
       <p style="text-align: center; color: #94a3b8; margin-top: 20px; font-size: 0.9rem; font-style: italic;">
-        <i class="fas fa-check-circle" style="color: var(--primary);"></i>
-        Each unit is hand-calibrated and tested for 24 hours before shipping. <br />
-        <strong>Current lead time: 3–5 days.</strong>
+        <i class="fas fa-check-circle" style="color: var(--primary);"></i> Each unit is hand-calibrated and tested for 24 hours. <br /><strong>Current lead time: 3–5 days.</strong>
       </p>
     </section>
 
-    <!-- CONTACT -->
+    <div class="quick-links">
+      <a href="https://www.infomatrix3d.com/help.html" target="_blank">
+        <i class="fas fa-question-circle"></i> Help & Documentation
+      </a>
+      <a href="https://www.infomatrix3d.com/demo.html" target="_blank">
+        <i class="fas fa-desktop"></i> Try the Demo UI
+      </a>
+    </div>
+
     <div class="contact-section">
       <h2>Have a Question?</h2>
       <p>Interested in bulk orders or custom features? Send us a query.</p>
@@ -453,29 +324,19 @@
   </footer>
 
   <script>
-    // ================================
-    // Slideshow: auto rotate + dots + pause on hover
-    // Includes: stop YouTube playback when leaving video slide
-    // ================================
-
     let slideIndex = 0;
     let timer = null;
-    const intervalMs = 10000; // ✅ Change this to control speed (e.g., 4000 = 4s)
-
+    const intervalMs = 10000;
     const heroMedia = document.getElementById("heroMedia");
     const slides = Array.from(document.querySelectorAll(".mySlides"));
     const prevBtn = document.querySelector(".prev");
     const nextBtn = document.querySelector(".next");
     const dotsWrap = document.getElementById("dots");
 
-    // Generate dots automatically
     const dots = slides.map((_, i) => {
       const dot = document.createElement("span");
       dot.className = "dot";
-      dot.addEventListener("click", () => {
-        showSlide(i);
-        restartAuto();
-      });
+      dot.addEventListener("click", () => { showSlide(i); restartAuto(); });
       dotsWrap.appendChild(dot);
       return dot;
     });
@@ -484,60 +345,34 @@
       if (!slideEl) return;
       const iframe = slideEl.querySelector("iframe.yt-frame");
       if (!iframe) return;
-
-      // Reset src to stop playback when hidden
       const src = iframe.getAttribute("src");
       iframe.setAttribute("src", src);
     }
 
     function showSlide(index) {
       if (slides.length === 0) return;
-
-      // Wrap around
       if (index >= slides.length) index = 0;
       if (index < 0) index = slides.length - 1;
-
-      // Stop YouTube on the previous slide before switching
       stopYouTubeInSlide(slides[slideIndex]);
-
-      // Hide all slides & deactivate dots
       slides.forEach(s => (s.style.display = "none"));
       dots.forEach(d => d.classList.remove("active"));
-
-      // Show current slide
       slides[index].style.display = "block";
       if (dots[index]) dots[index].classList.add("active");
-
       slideIndex = index;
     }
 
     function nextSlide() { showSlide(slideIndex + 1); }
     function prevSlide() { showSlide(slideIndex - 1); }
-
-    function startAuto() {
-      stopAuto();
-      timer = setInterval(nextSlide, intervalMs);
-    }
-
-    function stopAuto() {
-      if (timer) clearInterval(timer);
-      timer = null;
-    }
-
+    function startAuto() { stopAuto(); timer = setInterval(nextSlide, intervalMs); }
+    function stopAuto() { if (timer) clearInterval(timer); timer = null; }
     function restartAuto() { startAuto(); }
 
-    // Buttons
     prevBtn.addEventListener("click", () => { prevSlide(); restartAuto(); });
     nextBtn.addEventListener("click", () => { nextSlide(); restartAuto(); });
-
-    // Pause on hover
     heroMedia.addEventListener("mouseenter", stopAuto);
     heroMedia.addEventListener("mouseleave", startAuto);
-
-    // Start slideshow
     showSlide(0);
     startAuto();
   </script>
-
 </body>
 </html>
