@@ -1,940 +1,1446 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Matrix Controller</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  
+  <meta charset="UTF-8" />
+  <title>InfoMatrix Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- GIF decoder used by your existing GIF pipeline -->
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
 
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: #fff; text-align: center; margin: 0; padding: 20px; }
-    h2 { color: #f0f0f0; margin-bottom: 20px; }
-    
-    .container { max-width: 400px; margin: 0 auto; background: #2a2a2a; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    
-    .section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #444; }
-    .section:last-child { border-bottom: none; }
-    
-    label { display: block; margin: 10px 0 5px; text-align: left; color: #aaa; font-size: 14px; }
-    input, select { width: 100%; padding: 10px; margin-bottom: 10px; background: #333; border: 1px solid #555; color: #fff; border-radius: 6px; box-sizing: border-box; }
-    input:focus { outline: none; border-color: #007bff; }
-    
-    button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: background 0.2s; }
-    button:hover { background: #0056b3; }
-    button:disabled { background: #555; cursor: not-allowed; }
-    
-    #drop-zone { border: 2px dashed #555; padding: 30px; margin: 10px 0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-    #drop-zone.hover { border-color: #0f0; background: #333; }
-    canvas { border: 1px solid #555; margin-top: 10px; background: #000; border-radius: 4px; }
-    #gif-status { font-size: 13px; color: #aaa; margin-top: 5px; }
-    
-    /* Improved Duration Field Styling */
-    fieldset { border: 1px solid #444; border-radius: 8px; padding: 10px; margin-top: 10px; }
-    legend { font-size: 12px; color: #007bff; padding: 0 5px; }
-	
-	
-.update-banner {
-    display: none;
-    position: relative;
-    margin: 8px 0;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: #fff8e1;
-    border: 1px solid #ffe082;
-    color: #5d4037;
-    font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  }
-  .update-banner.show { display: block; }
-  .update-banner a {
-    font-weight: 600;
-    color: #1a73e8;
-    text-decoration: none;
-    margin-left: 8px;
-  }
+    :root{
+      --bg: #121212;
+      --panel: #1e1e1e;
+      --panel2:#242424;
+      --text:#f3f4f6;
+      --muted:#a1a1aa;
+      --border:#343434;
 
+      --blue:#007bff;
+      --blue2:#1a73e8;
+      --green:#22c55e;
+      --amber:#f59e0b;
+      --red:#d9534f;
+      --grey:#555;
+      --grey2:#666;
+    }
 
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; padding:18px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container{
+      max-width: 920px;
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 6px 25px rgba(0,0,0,.45);
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing:.2px;
+      margin:0;
+    }
+
+    .subtitle{
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+	
+		/* ----------------------------------
+	   Floating Save Bar (All Tabs)
+	---------------------------------- */
+	#save-bar {
+	  position: fixed;
+	  bottom: 14px;
+	  left: 50%;
+	  transform: translateX(-50%);
+	  width: min(92%, 720px);
+	  background: #1e1e1e;
+	  border: 1px solid #343434;
+	  border-radius: 14px;
+	  padding: 10px;
+	  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+	  z-index: 999;
+	}
+
+	#save-bar .btn {
+	  width: 100%;
+	  font-size: 16px;
+	  padding: 14px;
+	}
+
+	/* Prevent content from being hidden behind bar */
+	body {
+	  padding-bottom: 90px;
+	}
+
+    /* Tabs */
+    .tabs{
+      display:flex;
+      gap:8px;
+      padding: 10px;
+      background: #181818;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 12px 0 16px;
+    }
+    .tabs::-webkit-scrollbar{ height:8px; }
+    .tabs::-webkit-scrollbar-thumb{ background:#2f2f2f; border-radius:8px; }
+
+    .tab{
+      border: 1px solid var(--border);
+      background: #1b1b1b;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor:pointer;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 700;
+      transition: .15s ease;
+      user-select:none;
+    }
+    .tab:hover{ background:#202020; color: var(--text); }
+    .tab.active{
+      background: var(--blue);
+      border-color: rgba(255,255,255,.15);
+      color: #fff;
+    }
+
+    .tab-panel{ display:none; }
+    .tab-panel.active{ display:block; }
+
+    /* Grid */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media(max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    /* Cards */
+    .card{
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .card h3{
+      margin:0 0 10px;
+      font-size: 14px;
+      letter-spacing:.2px;
+    }
+    .hint{ color:var(--muted); font-size:12px; margin-top:6px; }
+
+    label{
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 10px 0 6px;
+    }
+
+    input, select, textarea{
+      width:100%;
+      padding: 10px 10px;
+      border-radius: 10px;
+      border: 1px solid #3a3a3a;
+      background: #151515;
+      color: var(--text);
+      outline: none;
+    }
+    textarea{ resize: vertical; min-height: 46px; }
+    input:focus, select:focus, textarea:focus{ border-color: rgba(0,123,255,.6); }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .row > *{ flex:1; }
+
+    .chip-row{
+      display:flex;
+      gap:12px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .chip-row label{
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .chip-row input[type="checkbox"]{
+      width:auto;
+      transform: translateY(1px);
+    }
+
+    /* Buttons */
+    .btn{
+      width:100%;
+      border:none;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-weight: 800;
+      cursor:pointer;
+      transition:.15s ease;
+      font-size: 14px;
+    }
+    .btn.primary{ background: var(--blue); color:#fff; }
+    .btn.primary:hover{ background: #0b66d6; }
+    .btn.danger{ background: var(--red); color:#fff; }
+    .btn.danger:hover{ background: #c64541; }
+    .btn.amber{ background: var(--amber); color:#111; }
+    .btn.amber:hover{ background: #e08d07; }
+    .btn.grey{ background: var(--grey); color:#fff; }
+    .btn.grey:hover{ background: var(--grey2); }
+    .btn.small{ padding: 9px 10px; font-size: 13px; width:auto; }
+        .btn.purple{ background:#8e44ad; }
+		.btn.purple:hover{ background: #8e21ad; }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      margin-top: 0;
+    }
+
+    /* Collapsible */
+    details{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #1d1d1d;
+    }
+    details + details{ margin-top: 10px; }
+    summary{
+      cursor:pointer;
+      font-weight: 800;
+      color: var(--text);
+      list-style:none;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    summary .muted{ font-weight: 700; color: var(--muted); font-size: 12px; }
+
+    /* Sliders */
+    .slider-row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    input[type="range"]{ width:100%; }
+
+    /* Two-col helper */
+    .two-col{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media(max-width: 860px){
+      .two-col{ grid-template-columns: 1fr; }
+    }
+
+    .mini-note{
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* GIF */
+    #drop-zone{
+      border: 2px dashed #555;
+      padding: 22px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align:center;
+      background:#151515;
+      transition: .15s ease;
+    }
+    #drop-zone.hover{
+      border-color: var(--green);
+      background:#1a1a1a;
+    }
+    canvas{
+      border: 1px solid #555;
+      margin-top: 10px;
+      background: #000;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 360px;
+      height: auto;
+    }
+
+    /* Update banner */
+    .update-banner{
+      display:none;
+      position: relative;
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      color: #5d4037;
+      font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    .update-banner.show{ display:block; }
+    .update-banner a{
+      font-weight: 900;
+      color: var(--blue2);
+      text-decoration: none;
+      margin-left: 8px;
+    }
+
+    .footer{
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align:center;
+    }
   </style>
 </head>
+
 <body>
+  <div class="container">
+    <header>
+      <div>
+        <h1 class="title">
+          <svg width="22" height="22" viewBox="0 0 24 24" stroke="#22c55e" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+          </svg>
+          InfoMatrix Dashboard
+        </h1>
+        <div class="subtitle">Ultimate LED Ticker</div>
+      </div>
 
-<div class="container">
+      <div class="actions">
+        <button class="btn amber small" onclick="toggleFocus()">Pomodoro</button>
+        <button class="btn purple small" onclick="toggleVisualizer()">Visualizer</button>
+        <button class="btn danger small" onclick="rebootDevice()">Reboot</button>
+      </div>
+    </header>
 
- <h2>
-    <svg width="24" height="24" viewBox="0 0 24 24" stroke="#22c55e" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="7" height="7"></rect>
-      <rect x="14" y="3" width="7" height="7"></rect>
-      <rect x="3" y="14" width="7" height="7"></rect>
-      <rect x="14" y="14" width="7" height="7"></rect>
-    </svg>
-    InfoMatrix Dashboard
-  </h2>
+    <!-- Tabs -->
+    <nav class="tabs" aria-label="Dashboard tabs">
+      <button class="tab active" data-tab="general" onclick="openTab('general')">General</button>
+      <button class="tab" data-tab="stocks" onclick="openTab('stocks')">Stocks</button>
+      <button class="tab" data-tab="sports" onclick="openTab('sports')">Sports</button>
+      <button class="tab" data-tab="commute" onclick="openTab('commute')">Commute</button>
+      <button class="tab" data-tab="media" onclick="openTab('media')">Media</button>
+    </nav>
 
-  
-  <div class="section" style="display: flex; gap: 10px;">
-    <button onclick="toggleFocus()" style="background: #e67e22; flex: 1;">Focus Mode</button>
-    <button onclick="toggleVisualizer()" style="background: #8e44ad; flex: 1;">Visualizer Mode</button>
-  </div>
-  
+    <!-- ===================== GENERAL ===================== -->
+    <section class="tab-panel active" id="tab-general">
+      <div class="grid">
 
-<div class="section">
-    <label>Stock Symbols (comma separated)</label>
-    <textarea id="stocks" rows="2" placeholder="AAPL, BTC-USD, TSLA" 
-          oninput="this.value = this.value.toUpperCase()"
-          style="width: 100%; padding: 10px; background: #333; border: 1px solid #555; 
-                 color: #fff; border-radius: 6px; box-sizing: border-box; resize: vertical; 
-                 font-family: inherit;"></textarea>
+        <div class="card">
+          <h3>Display</h3>
 
-    <div style="display: flex; gap: 15px; align-items: flex-end;">
-      <div style="flex-grow: 1;">
-        <label>Graph Range</label>
-        <select id="range" style="margin-bottom: 0;"> 
-		
-		<option value="1h">1 Hour</option>
-		<option value="4h">4 Hour</option>
-          <option value="1d">1 Day</option>
-          <option value="1mo">1 Month</option>
-          <option value="1y">1 Year</option>
+          <label>Brightness</label>
+          <div class="slider-row">
+            <input type="range" id="bright" min="5" max="255" oninput="updateBritLabel(this.value)">
+            <div style="width:44px; text-align:right; font-weight:900;" id="bright-val">60</div>
+          </div>
+
+          <div class="chip-row" style="margin-top:10px;">
+            <label><input type="checkbox" id="nMode"> Enable Night Mode</label>
+          </div>
+
+          <div id="night-settings" style="display:none; margin-top:10px;">
+            <div class="two-col">
+              <div>
+                <label>Dim Start (0-23)</label>
+                <input type="number" id="nStart" placeholder="22" min="0" max="23">
+              </div>
+              <div>
+                <label>Dim End (0-23)</label>
+                <input type="number" id="nEnd" placeholder="7" min="0" max="23">
+              </div>
+            </div>
+
+            <label>Night Brightness (%)</label>
+            <div class="slider-row">
+              <input type="range" id="nBrit" min="0" max="100" oninput="updateNBritLabel(this.value)">
+              <div style="width:44px; text-align:right; font-weight:900;" id="nbrit-val">10</div>
+            </div>
+          </div>
+
+          <div class="hint">Night mode reduces brightness automatically during the configured window.</div>
+        </div>
+
+        <div class="card">
+          <h3>Time & Weather</h3>
+
+          <label>City Weather (e.g. Toronto,CA)</label>
+          <input type="text" id="city" placeholder="City,Country">
+
+          <div class="two-col">
+            <div>
+              <label>Temp Units</label>
+              <select id="units">
+                <option value="metric">Celsius (°C)</option>
+                <option value="imperial">Fahrenheit (°F)</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Timezone Offset</label>
+              <input type="number" id="tz" value="-5">
+              <div class="chip-row" style="margin-top:8px;">
+                <label><input type="checkbox" id="autoTZ"> Auto Timezone</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="hint">Timezone influences schedules and any time-based display logic.</div>
+        </div>
+
+        <div class="card">
+          <h3>Cycle Durations (Seconds)</h3>
+          <div class="two-col">
+            <div>
+              <label>Stocks</label>
+              <input type="number" id="dStock">
+            </div>
+            <div>
+              <label>Weather</label>
+              <input type="number" id="dWeath">
+            </div>
+
+            <div>
+              <label>Messages</label>
+              <input type="number" id="dMsg">
+            </div>
+            <div>
+              <label>GIF</label>
+              <input type="number" id="dGif">
+            </div>
+
+            <div>
+              <label>Commute</label>
+              <input type="number" id="dCom">
+            </div>
+            <div>
+              <label>NCAA</label>
+              <input type="number" id="durNcaa">
+            </div>
+
+            <div>
+              <label>NBA</label>
+              <input type="number" id="dNba">
+            </div>
+            <div>
+              <label>EPL</label>
+              <input type="number" id="durEpl">
+            </div>
+
+            <div>
+              <label>NFL</label>
+              <input type="number" id="dNfl">
+            </div>
+            <div>
+              <label>NHL</label>
+              <input type="number" id="dNhl">
+            </div>
+
+            <div>
+              <label>MLB</label>
+              <input type="number" id="dMlb">
+            </div>
+            <div>
+              <label>Cricket</label>
+              <input type="number" id="dCrkt">
+            </div>
+          </div>
+
+
+        </div>
+      
+	  <div>
+        <div class="card">
+          <h3>Focus Timer (Pomodoro)</h3>
+          <div class="two-col">
+            <div>
+              <label>Work (min)</label>
+              <input type="number" id="fWork" placeholder="25">
+            </div>
+            <div>
+              <label>Break (min)</label>
+              <input type="number" id="fBrk" placeholder="5">
+            </div>
+          </div>
+          <div class="hint">Use the Focus toggle (top right) to enable/disable Focus mode.</div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <h3>Backup & Restore Config</h3>
+
+          <div class="row" style="margin-top:10px;">
+            <button class="btn grey" onclick="exportConfig()">Export</button>
+            <button class="btn grey" onclick="document.getElementById('importConfigFile').click()">Import</button>
+			
+<button class="btn danger"
+        onclick="resetConfig()">
+  Reset
+</button>
+
+          </div>
+          <input type="file" id="importConfigFile" accept=".json" style="display:none">
+
+          <div class="mini-note">
+            Export downloads current <b>config.json</b>. Import overwrites configuration and may reboot the device.
+          </div>
+        </div
+		</div>
+
+      </div>
+    </section>
+
+    <!-- ===================== STOCKS ===================== -->
+    <section class="tab-panel" id="tab-stocks">
+      <div class="grid">
+        <div class="card">
+          <h3>Symbols & Chart</h3>
+          <label>Stock/Crypto/Forex (comma separated)</label>
+          <textarea id="stocks" rows="2" placeholder="AAPL, BTC-USD, TSLA" oninput="this.value=this.value.toUpperCase()"></textarea>
+
+          <div class="two-col">
+            <div>
+              <label>Graph Range</label>
+              <select id="range">
+                <option value="1h">1 Hour</option>
+                <option value="4h">4 Hour</option>
+                <option value="1d">1 Day</option>
+                <option value="1mo">1 Month</option>
+                <option value="1y">1 Year</option>
+                <option value="livegrid">Grid (Text Only)</option>
+              </select>
+            </div>
+            <div>
+              <label>Graph Type</label>
+              <select id="graphtype">
+                <option value="line">Line</option>
+                <option value="candle">CandleStick</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="chip-row">
+            <label><input type="checkbox" id="stockLogo"> Logo</label>
+            <label><input type="checkbox" id="splitScreen"> 4Split</label>
+            <label><input type="checkbox" id="isUSA"> .US</label>
+          </div>
+		   <p class="mini-note"><i>Reboot is required to initialize any logo.</i></p>
+        </div>
+        <div class="card">
+          <h3>API Keys</h3>
+          <label>Realtime - Finnhub API Key (Optional)</label>
+          <input type="text" id="finnhub" placeholder="API Key - Get free at finnhub.io">
+
+          <label>Crypto Exchange</label>
+          <select id="cexch" disabled style="color:#888;background:#f3f3f3;">
+            <option value="BINANCE" selected>BINANCE</option>
+            <option value="COINBASE">COINBASE</option>
+            <option value="POLONIEX">POLONIEX</option>
+            <option value="KRAKEN">KRAKEN</option>
+            <option value="KUCOIN">KUCOIN</option>
+            <option value="BITFINEX">BITFINEX</option>
+          </select>
+
+          <label>OHLC - TwelveData API Key (Optional/Secondary)</label>
+          <input type="text" id="twelveDataKey" placeholder="API Key - Get free at twelvedata.com">
+
+          <div class="hint" id="exchHelp" style="margin-top:8px;">
+            Exchange selection is enabled after Finnhub key is entered.
+          </div>
 		  
-          <option value="livegrid">Grid (Text Only)</option>
-        </select>
-      </div>
-	  <div style="flex-grow: 1;">
-        <label>Graph Type</label>
-        <select id="graphtype" style="margin-bottom: 0;"> <option value="line">Line</option>
-		<option value="candle">CandleStick</option>
-          <option value="both">Both</option>
-        </select>
-      </div>
-
-      
-      <div style="padding-bottom: 10px;"> <label style="cursor: pointer; margin: 0;">
-          <input type="checkbox" id="stockLogo" style="width: auto; margin-right: 5px; vertical-align: middle;"> 
-          Logo
-        </label>
-      </div>
-	  
-	  	  	        <div style="padding-bottom: 10px;"> <label style="cursor: pointer; margin: 0;">
-          <input type="checkbox" id="splitScreen" style="width: auto; margin-right: 5px; vertical-align: middle;"> 
-          4Split
-        </label>
-      </div>
-
-	        
-	  <div style="padding-bottom: 10px;"> <label style="cursor: pointer; margin: 0;">
-	   <input type="checkbox" id="isUSA" style="width: auto; margin-right: 5px;"> 
-      .US
-  </label> </div>
-    </div>
-
-
-<div style="display: flex; gap: 15px; align-items: flex-end;">
-<div style="flex-grow: 1;">
-  <label>Realtime - Finnhub API Key (Optional)</label>
-  <input type="text" id="finnhub" placeholder="API Key - Get free at finnhub.io">
-   
-</div>  
-<div>
-  <label>Exchange</label>
-  <select id="cexch" disabled style="width:140px;color:#888;background:#f3f3f3;">
-    <option value="BINANCE" selected>BINANCE</option>
-    <option value="COINBASE">COINBASE</option>
-	<option value="POLONIEX">POLONIEX</option>
-   </select>
-</div>
-
-</div>
-
-<div style="display: flex; gap: 15px; align-items: flex-end;">
-<div style="flex-grow: 1;">
-  <label>OHLC - TwelveData API Key (Optional/Secondary)</label>
-  <input type="text" id="twelveDataKey" placeholder="API Key - Get free at twelvedata.com">
-</div>  
-</div>
-
-  <div><label>Stock Alerts</label>
-	    <input type="text" id="sAlerts" maxlength="320" placeholder="AAPL > 300, TSLA < 250, ETH-USD < 2005" oninput="this.value = this.value.toUpperCase()"></div>
-
-
-  <div><label>Custom Display Names (Ticker>>Name)</label>
-<input type="text" id="customAliasStr" placeholder="BTC-USD>>BITCOIN, TSLA>>TESLA"></div>
-
-  </div>
-
-  <div class="section">
-
-    <label>NBA Teams (comma separated)</label>
-    <input type="text" id="nbaTeam" placeholder="TOR,LAL,GSW or ALL" oninput="this.value = this.value.toUpperCase()" />
-
-    <label>EPL Teams (comma separated)</label>
-    <input type="text" id="eplTeam" placeholder="ARS,LIV,MUN or ALL" oninput="this.value = this.value.toUpperCase()" />
-
-    <label>NFL Teams (comma separated)</label>
-    <input type="text" id="nflTeam" placeholder="KC,PHI,BUF,DAL or ALL" oninput="this.value = this.value.toUpperCase()" />
-	
-	<label>NHL Teams (comma separated)</label>
-    <input type="text" id="nhlTeam" placeholder="TOR,VGK,MTL or ALL" oninput="this.value = this.value.toUpperCase()" />
-	
-	<label>MLB Teams (comma separated)</label>
-    <input type="text" id="mlbTeam" placeholder="NYY,LAD,TOR or ALL" oninput="this.value = this.value.toUpperCase()" />
-	
-	<label>Cricket Team or Series (comma separated)</label>
-    <input type="text" id="cricketKeyword" placeholder="ENGLAND, ICC, TOP or ALL" />
-	
-	<p style="font-size: 9px;"><i>Reboot is required to initialize any Sports or Stock logo</i>.</p>
-  </div>
-  
-  <div class="section">
-  <label>Commute Configuration - Key</label>
-  <input type="text" id="gKey" placeholder="Google Routes API Key">
-  
-  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-    <div style="flex: 1;">
-      <label>Origin (Home)</label>
-      <input type="text" id="home" placeholder="Address or Lat,Long">
-    </div>
-    <div style="flex: 1;">
-      <label>Destination (Work)</label>
-      <input type="text" id="work" placeholder="Address or Lat,Long">
-    </div>
-  </div>
-
-  <div style="display: flex; gap: 10px; align-items: flex-end;">
-    <div style="flex: 1;">
-      <label>Transport Mode</label>
-      <select id="cMode" onchange="toggleStationField()">
-        <option value="Car">Private Vehicle</option>
-        <option value="Bus">Bus</option>
-        <option value="Rail_Transit">Rail (Subway, LRT)</option>
-        <option value="Train">Train (Park & Ride)</option>
-      </select>
-    </div>
-    <div style="flex: 1;">
-      <label>Active Window (0-23 Hours)</label>
-      <div style="display: flex; gap: 5px;">
-        <input type="number" id="cStart" placeholder="7" min="0" max="23">
-        <input type="number" id="cEnd" placeholder="9" min="0" max="23">
-      </div>
-    </div>
-  </div>
-
-  <div id="station-group" style="display:none; margin-top: 10px;">
-    <label>Station Address (for Park & Ride)</label>
-    <input type="text" id="stat" placeholder="e.g. Union Station GO">
-  </div>
-</div>
-
-  <div class="section">
-    <label>City Weather (e.g. Toronto,CA)</label>
-    <input type="text" id="city" placeholder="City,Country">
-    
-    <div style="display: flex; gap: 10px;">
-      <div style="flex: 1;">
-        <label>Temp Units</label>
-        <select id="units">
-          <option value="metric">Celsius (°C)</option>
-          <option value="imperial">Fahrenheit (°F)</option>
-        </select>
-      </div>
-      
-      <div style="flex: 1;">
-        <label>Timezone Offset</label>
-        <input type="number" id="tz" value="-5">
-         <label style="cursor: pointer; margin: 0;">
-          <input type="checkbox" id="autoTZ" style="width: auto; margin-right: 5px; vertical-align: middle;"> 
-          Auto Timezone
-        </label>
-      </div>
-	  
-	   
-    </div>
-  </div>
-
-  <div class="section">
-    <label>Message Configuration</label>
-    <div style="display:flex; gap:5px; margin-bottom:5px;">
-       <select id="mode1" onchange="updateUI(1)" style="width:80px;">
-         <option value="text">Text</option>
-         <option value="rss">RSS</option>
-       </select>
-       <input type="text" id="val1" style="flex-grow:1;"> 
-       <input type="color" id="col1" value="#ffffff" style="width:40px; height: 38px;">
-    </div>
-    <div style="display:flex; gap:5px; margin-bottom:5px;">
-       <select id="mode2" onchange="updateUI(2)" style="width:80px;">
-         <option value="text">Text</option>
-         <option value="rss">RSS</option>
-       </select>
-       <input type="text" id="val2" style="flex-grow:1;"> 
-       <input type="color" id="col2" value="#ffffff" style="width:40px; height: 38px;">
-    </div>
-    <div style="display:flex; gap:5px; margin-bottom:5px;">
-       <select id="mode3" onchange="updateUI(3)" style="width:80px;">
-         <option value="text">Text</option>
-         <option value="rss">RSS</option>
-       </select>
-       <input type="text" id="val3" style="flex-grow:1;"> 
-       <input type="color" id="col3" value="#ffffff" style="width:40px; height: 38px;">
-    </div>
-  </div>
-  
-    <div class="section">
-    <label>Focus Timer (Pomodoro)</label>
-    <div style="display:flex; gap:10px; margin-bottom:10px;">
-        <div style="flex:1">
-           <span style="font-size:12px; color:#aaa;">Work (min)</span>
-           <input type="number" id="fWork" placeholder="25">
+		  
         </div>
-        <div style="flex:1">
-           <span style="font-size:12px; color:#aaa;">Break (min)</span>
-           <input type="number" id="fBrk" placeholder="5">
+
+        <div class="card">
+          <h3>Alerts & Aliases</h3>
+          <label>Stock Alerts</label>
+          <input type="text" id="sAlerts" maxlength="320" placeholder="AAPL > 300, TSLA < 250, ETH-USD < 2005" oninput="this.value=this.value.toUpperCase()">
+
+          <label>Custom Display Names (Ticker>>Name)</label>
+          <input type="text" id="customAliasStr" placeholder="BTC-USD>>BITCOIN, TSLA>>TESLA">
         </div>
-    </div>
-    </div>
-  <div class="section">
-    <label>Brightness & Schedule</label>
-    <div style="display:flex; align-items:center;">
-      <input type="range" id="bright" min="5" max="255" oninput="updateBritLabel(this.value)">
-      <span id="bright-val" style="margin-left:10px; width:30px">60</span>
-    </div>
-
-    <label style="margin-top:15px">
-      <input type="checkbox" id="nMode" style="width:auto;"> Enable Night Mode
-    </label>
-    
-    <div id="night-settings" style="display:none; margin-top:10px; background:#222; padding:10px; border-radius:6px;">
-      <label>Dim Between (Hours 0-23)</label>
-      <div style="display:flex; gap:10px;">
-        <input type="number" id="nStart" placeholder="Start (22)">
-        <input type="number" id="nEnd" placeholder="End (7)">
       </div>
-      <label>Night Brightness</label>
-      <div style="display:flex; align-items:center;">
-        <input type="range" id="nBrit" min="0" max="100" oninput="updateNBritLabel(this.value)">
-        <span id="nbrit-val" style="margin-left:10px; width:30px">10</span>
-      </div>
-    </div>
+    </section>
 
-    <fieldset>
-      <legend>Cycle Durations (Seconds)</legend>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <label style="flex:1; min-width: 60px;">
-          <span>Stocks</span>
-          <input type="number" id="dStock">
-        </label>
-		<label style="flex:1; min-width: 60px;">
-          <span>Weather</span>
-          <input type="number" id="dWeath">
-        </label>
-        <label style="flex:1; min-width: 60px;">
-          <span>Msg</span>
-          <input type="number" id="dMsg">
-        </label>
-        <label style="flex:1; min-width: 60px;">
-          <span>GIF</span>
-          <input type="number" id="dGif">
-        </label>
-		<label style="flex:1">
-          <span>Commute</span>
-          <input type="number" id="dCom">
-        </label>
-
-        <label style="flex:1; min-width: 50px;">
-          <span>NBA</span>
-          <input type="number" id="dNba">
-        </label>
-        <label style="flex:1; min-width: 50px;">
-          <span>EPL</span>
-          <input type="number" id="durEpl">
-        </label>
-        <label style="flex:1; min-width: 50px;">
-          <span>NFL</span>
-          <input type="number" id="dNfl">
-        </label>
-		<label style="flex:1">
-          <span>NHL</span>
-          <input type="number" id="dNhl">
-        </label>
-		<label style="flex:1">
-          <span>MLB</span>
-          <input type="number" id="dMlb">
-        </label>
-		<label style="flex:1">
-          <span>Cricket</span>
-          <input type="number" id="dCrkt">
-        </label>
+    <!-- ===================== SPORTS ===================== -->
+    <section class="tab-panel" id="tab-sports">
+      <div class="card">
+        <h3>Sports Configuration</h3>
 
 
+        <details open>
+          <summary>Major Leagues <span class="muted">NBA / NFL / NHL / MLB / EPL</span></summary>
+
+          <div style="margin-top:10px;" class="two-col">
+            <div>
+              <label>NBA Teams</label>
+              <input type="text" id="nbaTeam" placeholder="TOR,LAL,GSW or ALL" oninput="this.value=this.value.toUpperCase()">
+            </div>
+
+            <div>
+              <label>NFL Teams</label>
+              <input type="text" id="nflTeam" placeholder="KC,PHI,BUF,DAL or ALL" oninput="this.value=this.value.toUpperCase()">
+            </div>
+
+            <div>
+              <label>NHL Teams</label>
+              <input type="text" id="nhlTeam" placeholder="TOR,VGK,MTL or ALL" oninput="this.value=this.value.toUpperCase()">
+            </div>
+
+            <div>
+              <label>MLB Teams</label>
+              <input type="text" id="mlbTeam" placeholder="NYY,LAD,TOR or ALL" oninput="this.value=this.value.toUpperCase()">
+            </div>
+
+            <div>
+              <label>EPL Teams</label>
+              <input type="text" id="eplTeam" placeholder="ARS,LIV,MUN or ALL" oninput="this.value=this.value.toUpperCase()">
+            </div>
+
+            <div>
+              <label>Cricket Team / Series</label>
+              <input type="text" id="cricketKeyword" placeholder="ENGLAND, ICC, TOP or ALL">
+            </div>
+			
+			            <p class="mini-note"><i>Reboot is required to initialize any Sports logo.</i></p>
+          </div>
+        </details>
+
+        <details>
+          <summary>NCAA <span class="muted">Teams + sport filters</span></summary>
+
+          <div style="margin-top:10px;">
+            <label>NCAA Teams (comma separated or ALL)</label>
+            <input type="text" id="ncaaTeams" placeholder="DUKE,UNC,KANSAS or ALL" oninput="this.value=this.value.toUpperCase()">
+
+            <div class="chip-row" style="margin-top:10px;">
+              <label><input type="checkbox" id="ncaaBasketball"> Basketball</label>
+              <label><input type="checkbox" id="ncaaFootball"> Football</label>
+              <label><input type="checkbox" id="ncaaBaseball"> Baseball</label>
+            </div>
+
+
+          </div>
+        </details>
 
       </div>
-    </fieldset>
+    </section>
+
+    <!-- ===================== COMMUTE ===================== -->
+    <section class="tab-panel" id="tab-commute">
+      <div class="grid">
+        <div class="card">
+          <h3>Commute</h3>
+
+          <label>Google Routes API Key</label>
+          <input type="text" id="gKey" placeholder="Google Routes API Key">
+
+          <div class="two-col">
+            <div>
+              <label>Origin (Home)</label>
+              <input type="text" id="home" placeholder="Address or Lat,Long">
+            </div>
+            <div>
+              <label>Destination (Work)</label>
+              <input type="text" id="work" placeholder="Address or Lat,Long">
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div>
+              <label>Transport Mode</label>
+              <select id="cMode" onchange="toggleStationField()">
+                <option value="Car">Private Vehicle</option>
+                <option value="Bus">Bus</option>
+                <option value="Rail_Transit">Rail (Subway, LRT)</option>
+                <option value="Train">Train (Park & Ride)</option>
+              </select>
+            </div>
+            <div>
+              <label>Active Window (0-23)</label>
+              <div class="row">
+                <input type="number" id="cStart" placeholder="7" min="0" max="23">
+                <input type="number" id="cEnd" placeholder="9" min="0" max="23">
+              </div>
+            </div>
+          </div>
+
+          <div id="station-group" style="display:none; margin-top:10px;">
+            <label>Station Address (Park & Ride)</label>
+            <input type="text" id="stat" placeholder="e.g. Union Station GO">
+          </div>
+
+          <div class="hint">Station address is only used when Transport Mode = Train.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MEDIA ===================== -->
+    <section class="tab-panel" id="tab-media">
+      <div class="grid">
+
+        <!-- Messages (moved here) -->
+        <div class="card">
+          <h3>Messages</h3>
+
+          <div class="row" style="align-items:flex-end;">
+            <div style="flex:0 0 92px;">
+              <label>Mode</label>
+              <select id="mode1" onchange="updateUI(1)">
+                <option value="text">Text</option>
+                <option value="rss">RSS</option>
+              </select>
+            </div>
+            <div>
+              <label>Message / URL</label>
+              <input type="text" id="val1">
+            </div>
+            <div style="flex:0 0 56px;">
+              <label>Color</label>
+              <input type="color" id="col1" value="#ffffff" style="height:42px;">
+            </div>
+          </div>
+
+          <div class="row" style="align-items:flex-end; margin-top:8px;">
+            <div style="flex:0 0 92px;">
+              <select id="mode2" onchange="updateUI(2)">
+                <option value="text">Text</option>
+                <option value="rss">RSS</option>
+              </select>
+            </div>
+            <div><input type="text" id="val2"></div>
+            <div style="flex:0 0 56px;">
+              <input type="color" id="col2" value="#ffffff" style="height:42px;">
+            </div>
+          </div>
+
+          <div class="row" style="align-items:flex-end; margin-top:8px;">
+            <div style="flex:0 0 92px;">
+              <select id="mode3" onchange="updateUI(3)">
+                <option value="text">Text</option>
+                <option value="rss">RSS</option>
+              </select>
+            </div>
+            <div><input type="text" id="val3"></div>
+            <div style="flex:0 0 56px;">
+              <input type="color" id="col3" value="#ffffff" style="height:42px;">
+            </div>
+          </div>
+
+          <div class="hint">Message rotation timing is controlled in <b>General → Cycle Durations</b>.</div>
+        </div>
+
+        <!-- GIF (moved here) -->
+        <div class="card">
+          <h3>GIF / Animation</h3>
+
+          <div class="two-col">
+            <div>
+              <label for="matrixSizeSelect">Matrix Size</label>
+              <select id="matrixSizeSelect">
+                <option value="128x64">128 x 64 px</option>
+                <option value="80x40">80 x 40 px</option>
+                <option value="64x32" selected>64 x 32 px</option>
+              </select>
+            </div>
+            <div>
+              <label>Resize Mode</label>
+              <select id="resize-mode">
+                <option value="stretch">Stretch to Fill</option>
+                <option value="fit">Fit Center</option>
+                <option value="crop">Crop to Fit</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="drop-zone" style="margin-top:10px;">Drop GIF here or Click</div>
+          <input type="file" id="file-input" accept="image/gif" style="display:none">
+
+          <canvas id="preview" width="64" height="32" style="display:none"></canvas>
+          <p id="gif-status" class="hint">Ready for GIF. Upload &lt; 400 KB.</p>
+
+          <div class="row">
+            <button id="upload-btn" class="btn primary" disabled onclick="uploadGif()">Upload GIF</button>
+            <button class="btn danger" onclick="deleteGif()">Delete GIF</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Footer + Update -->
+    <div class="footer">
+      <span id="appVersion" data-version="2.0.6">
+        <a href="https://www.infomatrix3d.com/help.html" target="_blank" rel="noopener">
+          Help - infomatrix3d.com - v.2.0.6
+        </a>
+      </span>
+    </div>
+
+    <div id="updateBanner" class="update-banner" role="status" aria-live="polite">
+      <span id="updateText">Updates available.</span>
+      <a id="updateLink" href="https://update.infomatrix3d.com" target="_blank" rel="noopener">Get update</a>
+    </div>
   </div>
- 
-  <button onclick="saveSettings()" style="margin-bottom: 25px;">Save Configuration</button>
-  
-
-  <div class="section" style="border-bottom: none;">
-    <button onclick="rebootDevice()" style="background: #d9534f;">Reboot Device</button>
-  </div>
-  <hr style="border-color: #444; margin: 20px 0;">
-
-  <div class="section">
-    <label>Upload Animation (GIF)</label>
-	
-	<label for="matrixSizeSelect" class="label">Matrix Size</label>
-	  <select id="matrixSizeSelect">
-		<option value="128x64">128 x 64 px</option> <option value="80x40">80 x 40 px</option>
-		<option value="64x32" selected>64 x 32 px</option>
-	  </select>
-
-    <select id="resize-mode" style="margin-bottom: 10px;">
-      <option value="stretch">Stretch to Fill</option>
-      <option value="fit">Fit Center</option>
-      <option value="crop">Crop to Fit</option>
-    </select>
-    <div id="drop-zone">Drop GIF here or Click</div>
-    <input type="file" id="file-input" accept="image/gif" style="display:none">
-    <canvas id="preview" width="64" height="32" style="display:none"></canvas>
-    <p id="gif-status">Ready for GIF. Upload < 400 KB.</p>
-    <button id="upload-btn" disabled onclick="uploadGif()">Upload GIF to Matrix</button>
-    <button onclick="deleteGif()" style="background: #dc3545; margin-top: 10px;">Delete GIF</button>
-  </div>
-  
-  
-<div class="footer">
-  <span id="appVersion" data-version="1.18.3"><a href="https://www.infomatrix3d.com/help.html"  target="_blank">Support - infomatrix3d.com - v.1.18.3</a></span>
-</div>
-
-<div id="updateBanner" class="update-banner" role="status" aria-live="polite">
-  <span id="updateText">Updates available.</span>
-  <a id="updateLink" href="https://update.infomatrix3d.com" target="_blank" rel="noopener">Get update</a>
-</div>
-
-
-
-</div>
-
 
 <script>
-  // 1. SAFE ELEMENT SELECTION
-  // We use safe lookups so the script doesn't crash if an ID is missing
+/* =========================================================
+   Tabs (remembers selection)
+   ========================================================= */
+const TAB_KEY = 'infomatrixActiveTab';
+function openTab(name){
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.tab === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    p.classList.toggle('active', p.id === 'tab-' + name);
+  });
+  try { localStorage.setItem(TAB_KEY, name); } catch(e){}
+}
+function restoreTab(){
+  try{
+    const saved = localStorage.getItem(TAB_KEY);
+    if(saved) openTab(saved);
+  } catch(e){}
+}
+
+/* =========================================================
+   Small UI helpers
+   ========================================================= */
+function updateBritLabel(val){
+  const el = document.getElementById('bright-val');
+  if(el) el.innerText = val;
+}
+function updateNBritLabel(val){
+  const el = document.getElementById('nbrit-val');
+  if(el) el.innerText = val;
+}
+
+/* =========================================================
+   Exchange enablement (Finnhub key -> enable exchange select)
+   ========================================================= */
+function updateExchangeState(){
   const keyEl = document.getElementById('finnhub');
   const exchEl = document.getElementById('cexch');
-  // 'exchHelp' was missing in your HTML, causing the crash. We now handle it safely.
-  const helpEl = document.getElementById('exchHelp'); 
+  const helpEl = document.getElementById('exchHelp');
+  if(!keyEl || !exchEl) return;
 
-  function updateExchangeState() {
-    if (!keyEl || !exchEl) return; // Safety check
-    
-    const hasKey = (keyEl.value || '').trim().length > 0;
-    exchEl.disabled = !hasKey;
-    exchEl.style.color = hasKey ? '#222' : '#888';
-    exchEl.style.background = hasKey ? '#fff' : '#f3f3f3';
-    
-    // Only update help text if the element actually exists
-    if (helpEl) {
-        helpEl.textContent = hasKey
-        ? 'Exchange selection is active. Pick the venue Finnhub should use.'
-        : 'Exchange selection is enabled after Finnhub key is entered.';
-    }
+  const hasKey = (keyEl.value || '').trim().length > 0;
+  exchEl.disabled = !hasKey;
+  exchEl.style.color = hasKey ? '#222' : '#888';
+  exchEl.style.background = hasKey ? '#fff' : '#f3f3f3';
+
+  if(helpEl){
+    helpEl.textContent = hasKey
+      ? 'Exchange selection is active. Pick the venue Finnhub should use.'
+      : 'Exchange selection is enabled after Finnhub key is entered.';
   }
+}
 
-  // Event Listeners
-  document.addEventListener('DOMContentLoaded', updateExchangeState);
-  if(keyEl) keyEl.addEventListener('input', updateExchangeState);
-  window.addEventListener('DOMContentLoaded', updateExchangeState);
+/* =========================================================
+   Message placeholder logic
+   ========================================================= */
+function updateUI(id){
+  if(id) setRowUI(id);
+  else { setRowUI(1); setRowUI(2); setRowUI(3); }
+}
+function setRowUI(id){
+  const modeEl = document.getElementById('mode' + id);
+  const inputEl = document.getElementById('val' + id);
+  if(!modeEl || !inputEl) return;
+  inputEl.placeholder = (modeEl.value === 'rss')
+    ? 'Enter RSS Feed URL'
+    : 'Enter Text Message';
+}
 
-  function updateBritLabel(val) { 
-      const el = document.getElementById('bright-val');
-      if(el) el.innerText = val; 
-  }
-  function updateNBritLabel(val) { 
-      const el = document.getElementById('nbrit-val');
-      if(el) el.innerText = val; 
-  }
+/* =========================================================
+   Station field toggle (Commute)
+   ========================================================= */
+function toggleStationField(){
+  const modeEl = document.getElementById('cMode');
+  const grp = document.getElementById('station-group');
+  if(!modeEl || !grp) return;
+  grp.style.display = (modeEl.value === 'Train') ? 'block' : 'none';
+}
 
-  const nModeEl = document.getElementById('nMode');
-  if (nModeEl) {
-      nModeEl.onchange = function() {
-        document.getElementById('night-settings').style.display = this.checked ? 'block' : 'none';
-      };
-  }
+/* =========================================================
+   Load settings from /api/data (same mapping as original)
+   ========================================================= */
+function loadSettings(){
+  fetch('/api/data')
+    .then(res => res.json())
+    .then(data => {
+      // Stocks
+      if(document.getElementById('stocks')) document.getElementById('stocks').value = data.stocks || "";
+      if(document.getElementById('customAliasStr')) document.getElementById('customAliasStr').value = data.customAliasStr || "";
+      if(document.getElementById('stockLogo')) document.getElementById('stockLogo').checked = (data.stockLogo !== false);
+      if(document.getElementById('splitScreen')) document.getElementById('splitScreen').checked = (data.splitScreen !== false);
+      if(document.getElementById('sAlerts')) document.getElementById('sAlerts').value = data.sAlerts || "";
+      if(document.getElementById('finnhub')) document.getElementById('finnhub').value = data.finnhub || "";
+      if(document.getElementById('twelveDataKey')) document.getElementById('twelveDataKey').value = data.twelveDataKey || "";
+      if(document.getElementById('isUSA')) document.getElementById('isUSA').checked = (data.isUSA === true);
+      if(document.getElementById('range')) document.getElementById('range').value = data.range || "1d";
+      if(document.getElementById('graphtype')) document.getElementById('graphtype').value = data.graphtype || "both";
+      if(document.getElementById('cexch')) document.getElementById('cexch').value = data.cexch || "BINANCE";
 
-  function updateUI(id) {
-    if(id) setRowUI(id);
-    else { setRowUI(1); setRowUI(2); setRowUI(3); }
-  }
+      // Weather/Time (now in General)
+      if(document.getElementById('city')) document.getElementById('city').value = data.city || "";
+      if(document.getElementById('autoTZ')) document.getElementById('autoTZ').checked = (data.autoTZ === true);
+      if(document.getElementById('tz')) document.getElementById('tz').value = (data.tz != null ? data.tz : "-5");
+      if(document.getElementById('units')) document.getElementById('units').value = (data.metric !== false) ? "metric" : "imperial";
 
-  function setRowUI(id) {
-    const modeEl = document.getElementById('mode' + id);
-    const inputEl = document.getElementById('val' + id);
-    if (!modeEl || !inputEl) return;
-    
-    const mode = modeEl.value;
-    inputEl.placeholder = (mode === 'rss') ? "Enter RSS Feed URL" : "Enter Text Message";
-  }
+      // Timers
+      if(document.getElementById('dStock')) document.getElementById('dStock').value = data.dStock || 60;
+      if(document.getElementById('dWeath')) document.getElementById('dWeath').value = data.dWeath || 10;
+      if(document.getElementById('dMsg')) document.getElementById('dMsg').value = data.dMsg || 15;
+      if(document.getElementById('dGif')) document.getElementById('dGif').value = data.dGif || 30;
 
-  function loadSettings() {
-    fetch('/api/data')
-      .then(res => res.json())
-      .then(data => {
-        // --- DATA LOADING ---
-        if(document.getElementById('stocks')) document.getElementById('stocks').value = data.stocks || "";
-		if(document.getElementById('customAliasStr')) document.getElementById('customAliasStr').value = data.customAliasStr || "";
-        if(document.getElementById('stockLogo')) document.getElementById('stockLogo').checked = (data.stockLogo !== false);
-		 if(document.getElementById('splitScreen')) document.getElementById('splitScreen').checked = (data.splitScreen !== false);
-		if(document.getElementById('sAlerts')) document.getElementById('sAlerts').value = data.sAlerts || "";
-        
-        if(document.getElementById('finnhub')) document.getElementById('finnhub').value = data.finnhub || "";
-		if(document.getElementById('twelveDataKey')) document.getElementById('twelveDataKey').value = data.twelveDataKey || "";
-        if(document.getElementById('isUSA')) document.getElementById('isUSA').checked = (data.isUSA === true);
-        
-        if(document.getElementById('city')) document.getElementById('city').value = data.city || "";
-		if(document.getElementById('autoTZ')) document.getElementById('autoTZ').checked = (data.autoTZ === true);
-        if(document.getElementById('tz')) document.getElementById('tz').value = data.tz || "-5";
-        if(document.getElementById('range')) document.getElementById('range').value = data.range || "1d";
-		if(document.getElementById('graphtype')) document.getElementById('graphtype').value = data.graphtype || "Both";
-        if(document.getElementById('cexch')) document.getElementById('cexch').value = data.cexch || "BINANCE";
-        
-        // Timers
-        if(document.getElementById('dStock')) document.getElementById('dStock').value = data.dStock || 60;
-        if(document.getElementById('dWeath')) document.getElementById('dWeath').value = data.dWeath || 10;
-        if(document.getElementById('dMsg')) document.getElementById('dMsg').value = data.dMsg || 15;
-        if(document.getElementById('dGif')) document.getElementById('dGif').value = data.dGif || 30;
-		    
-        
-        if(document.getElementById('fWork')) document.getElementById('fWork').value = data.fWork || 25;
-        if(document.getElementById('fBrk')) document.getElementById('fBrk').value  = data.fBrk  || 5;
-		
-		
-				// Commute Loading
-		if(document.getElementById('gKey'))   document.getElementById('gKey').value = data.gKey || "";
-		if(document.getElementById('home'))   document.getElementById('home').value = data.home || "";
-		if(document.getElementById('work'))   document.getElementById('work').value = data.work || "";
-		if(document.getElementById('stat'))   document.getElementById('stat').value = data.stat || "";
-		if(document.getElementById('cMode')) {
-			document.getElementById('cMode').value = data.cMode || "Car";
-			toggleStationField(); // Initialize visibility
-		}
-		if(document.getElementById('cStart')) document.getElementById('cStart').value = data.cStart ?? 7;
-		if(document.getElementById('cEnd'))   document.getElementById('cEnd').value = data.cEnd ?? 9;
-		if(document.getElementById('dCom')) document.getElementById('dCom').value = data.dCom || 30;
+      if(document.getElementById('dCom')) document.getElementById('dCom').value = data.dCom || 30;
+      if(document.getElementById('durNcaa')) document.getElementById('durNcaa').value = data.durNcaa || 30;
+      if(document.getElementById('dNba')) document.getElementById('dNba').value = data.dNba || 30;
+      if(document.getElementById('durEpl')) document.getElementById('durEpl').value = data.durEpl || 30;
+      if(document.getElementById('dNfl')) document.getElementById('dNfl').value = data.dNfl || 30;
+      if(document.getElementById('dNhl')) document.getElementById('dNhl').value = data.dNhl || 30;
+      if(document.getElementById('dMlb')) document.getElementById('dMlb').value = data.dMlb || 30;
+      if(document.getElementById('dCrkt')) document.getElementById('dCrkt').value = data.dCrkt || 30;
 
-        // Sports
-        if(document.getElementById('nhlTeam')) document.getElementById('nhlTeam').value = data.nhlTeam || "";
-        if(document.getElementById('dNhl')) document.getElementById('dNhl').value = data.dNhl || 30;
-		
-		if(document.getElementById('mlbTeam')) document.getElementById('mlbTeam').value = data.mlbTeam || "";
-        if(document.getElementById('dMlb')) document.getElementById('dMlb').value = data.dMlb || 30;
+      // Focus
+      if(document.getElementById('fWork')) document.getElementById('fWork').value = data.fWork || 25;
+      if(document.getElementById('fBrk')) document.getElementById('fBrk').value = data.fBrk || 5;
 
-        if(document.getElementById('nbaTeam')) document.getElementById('nbaTeam').value = data.nbaTeam || "";
-        if(document.getElementById('dNba')) document.getElementById('dNba').value = data.dNba || 30;
+      // Commute
+      if(document.getElementById('gKey')) document.getElementById('gKey').value = data.gKey || "";
+      if(document.getElementById('home')) document.getElementById('home').value = data.home || "";
+      if(document.getElementById('work')) document.getElementById('work').value = data.work || "";
+      if(document.getElementById('stat')) document.getElementById('stat').value = data.stat || "";
+      if(document.getElementById('cMode')) document.getElementById('cMode').value = data.cMode || "Car";
+      toggleStationField();
+      if(document.getElementById('cStart')) document.getElementById('cStart').value = data.cStart || 7;
+      if(document.getElementById('cEnd')) document.getElementById('cEnd').value = data.cEnd || 9;
 
-        if(document.getElementById('eplTeam')) document.getElementById('eplTeam').value = data.eplTeam || "";
-        if(document.getElementById('durEpl')) document.getElementById('durEpl').value = data.durEpl || 30;
+      // Sports (teams only)
+      if(document.getElementById('nbaTeam')) document.getElementById('nbaTeam').value = data.nbaTeam || "";
+      if(document.getElementById('nflTeam')) document.getElementById('nflTeam').value = data.nflTeam || "";
+      if(document.getElementById('nhlTeam')) document.getElementById('nhlTeam').value = data.nhlTeam || "";
+      if(document.getElementById('mlbTeam')) document.getElementById('mlbTeam').value = data.mlbTeam || "";
+      if(document.getElementById('eplTeam')) document.getElementById('eplTeam').value = data.eplTeam || "";
+      if(document.getElementById('cricketKeyword')) document.getElementById('cricketKeyword').value = data.cricketKeyword || "";
 
-        if(document.getElementById('nflTeam')) document.getElementById('nflTeam').value = data.nflTeam || "";
-        if(document.getElementById('dNfl')) document.getElementById('dNfl').value = data.dNfl || 30;
-		
-		if(document.getElementById('cricketKeyword')) document.getElementById('cricketKeyword').value = data.cricketKeyword || "";
-        if(document.getElementById('dCrkt')) document.getElementById('dCrkt').value = data.dCrkt || 30;
-        
-        if(document.getElementById('units')) document.getElementById('units').value = (data.metric !== false) ? "metric" : "imperial";
+      // NCAA
+      if(document.getElementById('ncaaTeams')) document.getElementById('ncaaTeams').value = data.ncaaTeams || "";
+      if(document.getElementById('ncaaBasketball')) document.getElementById('ncaaBasketball').checked = (data.ncaaBasketball === true);
+      if(document.getElementById('ncaaFootball')) document.getElementById('ncaaFootball').checked = (data.ncaaFootball === true);
+      if(document.getElementById('ncaaBaseball')) document.getElementById('ncaaBaseball').checked = (data.ncaaBaseball === true);
 
-        // Messages
-        for(let i=1; i<=3; i++) {
-          let rss = data['rssUrl'+i];
-          if (rss && rss.length > 1) {
-             if(document.getElementById('mode'+i)) document.getElementById('mode'+i).value = "rss";
-             if(document.getElementById('val'+i)) document.getElementById('val'+i).value = rss;
-          } else {
-             if(document.getElementById('mode'+i)) document.getElementById('mode'+i).value = "text";
-             if(document.getElementById('val'+i)) document.getElementById('val'+i).value = data['msgL'+i] || "";
-          }
-          if(document.getElementById('col'+i)) document.getElementById('col'+i).value = data['colL'+i] || "#ffffff";
+      // Messages
+      for(let i=1; i<=3; i++){
+        const rss = data['rssUrl'+i];
+        if(rss && rss.length > 1){
+          const m = document.getElementById('mode'+i);
+          const v = document.getElementById('val'+i);
+          if(m) m.value = 'rss';
+          if(v) v.value = rss;
+        }else{
+          const m = document.getElementById('mode'+i);
+          const v = document.getElementById('val'+i);
+          if(m) m.value = 'text';
+          if(v) v.value = data['msgL'+i] || "";
         }
-        
-        updateUI();
-        
-        // --- FIX: Prevent crash here ---
-        try {
-           updateExchangeState();
-        } catch(e) { console.log("Exchange State Error ignored"); }
-
-        // --- BRIGHTNESS SETTINGS (Now guaranteed to run) ---
-        if(document.getElementById('bright')) {
-            document.getElementById('bright').value = data.bright || 60;
-            updateBritLabel(data.bright || 60);
-        }
-
-        if(document.getElementById('nMode')) {
-            document.getElementById('nMode').checked = data.nMode || false;
-            document.getElementById('night-settings').style.display = data.nMode ? 'block' : 'none';
-        }
-        
-        if(document.getElementById('nStart')) document.getElementById('nStart').value = data.nStart ?? 22;
-        if(document.getElementById('nEnd')) document.getElementById('nEnd').value = data.nEnd ?? 7;
-        
-        if(document.getElementById('nBrit')) {
-            document.getElementById('nBrit').value = data.nBrit ?? 10;
-            updateNBritLabel(data.nBrit ?? 10);
-        }
-      })
-      .catch(e => console.log("API Error:", e));
-  }
-
-  function saveSettings() {
-    const formData = new FormData();
-    // Helper to safely append if element exists
-    const appendIf = (key, id, checkbox=false) => {
-        const el = document.getElementById(id);
-        if(el) formData.append(key, checkbox ? el.checked : el.value);
-    };
-
-    appendIf('stocks', 'stocks');
-	appendIf('customAliasStr', 'customAliasStr');
-    appendIf('stockLogo', 'stockLogo', true);
-	appendIf('splitScreen', 'splitScreen', true);
-	appendIf('sAlerts', 'sAlerts');
-    appendIf('finnhub', 'finnhub');
-	appendIf('twelveDataKey', 'twelveDataKey');
-    appendIf('isUSA', 'isUSA', true);
-    appendIf('city', 'city');
-    appendIf('units', 'units');
-    appendIf('tz', 'tz');
-	appendIf('autoTZ', 'autoTZ', true);
-    appendIf('range', 'range');
-	appendIf('graphtype', 'graphtype');
-    appendIf('cexch', 'cexch');
-    
-    appendIf('fWork', 'fWork');
-    appendIf('fBrk', 'fBrk');
-
-    appendIf('nbaTeam', 'nbaTeam');
-    appendIf('dNba', 'dNba');
-    appendIf('eplTeam', 'eplTeam');
-    appendIf('durEpl', 'durEpl');
-    appendIf('nflTeam', 'nflTeam');
-    appendIf('dNfl', 'dNfl');
-	
-	    appendIf('mlbTeam', 'mlbTeam');
-    appendIf('dMlb', 'dMlb');
-	
-    appendIf('nhlTeam', 'nhlTeam');
-    appendIf('dNhl', 'dNhl');
-	    appendIf('cricketKeyword', 'cricketKeyword');
-    appendIf('dCrkt', 'dCrkt');
-	
-		// Commute Saving
-	appendIf('gKey', 'gKey');
-	appendIf('home', 'home');
-	appendIf('work', 'work');
-	appendIf('stat', 'stat');
-	appendIf('cMode', 'cMode');
-	appendIf('cStart', 'cStart');
-	appendIf('cEnd', 'cEnd');
-	appendIf('dCom', 'dCom');
-
-    for(let i=1; i<=3; i++) {
-      let mode = document.getElementById("mode"+i).value;
-      let val = document.getElementById("val"+i).value;
-      let col = document.getElementById("col"+i).value;
-      if(mode === 'rss') {
-        formData.append("rssUrl"+i, val);
-        formData.append("msgL"+i, "");
-      } else {
-        formData.append("msgL"+i, val);
-        formData.append("rssUrl"+i, "");
+        const c = document.getElementById('col'+i);
+        if(c) c.value = data['colL'+i] || "#ffffff";
       }
-      formData.append("colL"+i, col);
+      updateUI();
+
+      // Brightness / Night
+      if(document.getElementById('bright')){
+        document.getElementById('bright').value = data.bright ?? 60;
+        updateBritLabel(data.bright ?? 60);
+      }
+      if(document.getElementById('nMode')){
+        document.getElementById('nMode').checked = data.nMode ?? false;
+        document.getElementById('night-settings').style.display = (data.nMode ? 'block' : 'none');
+      }
+      if(document.getElementById('nStart')) document.getElementById('nStart').value = data.nStart ?? 22;
+      if(document.getElementById('nEnd')) document.getElementById('nEnd').value = data.nEnd ?? 7;
+      if(document.getElementById('nBrit')){
+        document.getElementById('nBrit').value = data.nBrit ?? 10;
+        updateNBritLabel(data.nBrit ?? 10);
+      }
+
+      // Exchange enablement
+      updateExchangeState();
+    })
+    .catch(e => console.log("API Error:", e));
+}
+
+/* =========================================================
+   Save settings to /api/save (same keys as original)
+   ========================================================= */
+function saveSettings(){
+  const formData = new FormData();
+  const appendIf = (key, id, checkbox=false) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    formData.append(key, checkbox ? el.checked : el.value);
+  };
+
+  // Stocks
+  appendIf('stocks','stocks');
+  appendIf('customAliasStr','customAliasStr');
+  appendIf('stockLogo','stockLogo',true);
+  appendIf('splitScreen','splitScreen',true);
+  appendIf('sAlerts','sAlerts');
+  appendIf('finnhub','finnhub');
+  appendIf('twelveDataKey','twelveDataKey');
+  appendIf('isUSA','isUSA',true);
+  appendIf('range','range');
+  appendIf('graphtype','graphtype');
+  appendIf('cexch','cexch');
+
+  // Weather/Time
+  appendIf('city','city');
+  appendIf('units','units');
+  appendIf('tz','tz');
+  appendIf('autoTZ','autoTZ',true);
+
+  // Focus
+  appendIf('fWork','fWork');
+  appendIf('fBrk','fBrk');
+
+  // Sports teams
+  appendIf('nbaTeam','nbaTeam');
+  appendIf('nflTeam','nflTeam');
+  appendIf('nhlTeam','nhlTeam');
+  appendIf('mlbTeam','mlbTeam');
+  appendIf('eplTeam','eplTeam');
+  appendIf('cricketKeyword','cricketKeyword');
+
+  // NCAA
+  appendIf('ncaaTeams','ncaaTeams');
+  appendIf('ncaaBasketball','ncaaBasketball',true);
+  appendIf('ncaaFootball','ncaaFootball',true);
+  appendIf('ncaaBaseball','ncaaBaseball',true);
+
+  // Commute
+  appendIf('gKey','gKey');
+  appendIf('home','home');
+  appendIf('work','work');
+  appendIf('stat','stat');
+  appendIf('cMode','cMode');
+  appendIf('cStart','cStart');
+  appendIf('cEnd','cEnd');
+  appendIf('dCom','dCom');
+
+  // Messages
+  for(let i=1; i<=3; i++){
+    const mode = (document.getElementById('mode'+i)?.value) || 'text';
+    const val  = (document.getElementById('val'+i)?.value) || '';
+    const col  = (document.getElementById('col'+i)?.value) || '#ffffff';
+    if(mode === 'rss'){
+      formData.append('rssUrl'+i, val);
+      formData.append('msgL'+i, "");
+    }else{
+      formData.append('msgL'+i, val);
+      formData.append('rssUrl'+i, "");
     }
-
-    appendIf('bright', 'bright');
-    appendIf('nMode', 'nMode', true);
-    appendIf('nStart', 'nStart');
-    appendIf('nEnd', 'nEnd');
-    appendIf('nBrit', 'nBrit');
-    
-    appendIf('dStock', 'dStock');
-    appendIf('dWeath', 'dWeath');
-    appendIf('dMsg', 'dMsg');
-    appendIf('dGif', 'dGif');
-
-    fetch('/api/save', { method: 'POST', body: formData })
-      .then(res => alert('Settings Saved! Device Updating...'));
+    formData.append('colL'+i, col);
   }
 
-  // --- GIF LOGIC (Unchanged) ---
-  let processedBlob = null;
+  // Brightness + Night
+  appendIf('bright','bright');
+  appendIf('nMode','nMode',true);
+  appendIf('nStart','nStart');
+  appendIf('nEnd','nEnd');
+  appendIf('nBrit','nBrit');
+
+  // Durations (single source of truth in General)
+  appendIf('dStock','dStock');
+  appendIf('dWeath','dWeath');
+  appendIf('dMsg','dMsg');
+  appendIf('dGif','dGif');
+  appendIf('durNcaa','durNcaa');
+  appendIf('dNba','dNba');
+  appendIf('durEpl','durEpl');
+  appendIf('dNfl','dNfl');
+  appendIf('dNhl','dNhl');
+  appendIf('dMlb','dMlb');
+  appendIf('dCrkt','dCrkt');
+
+  fetch('/api/save', { method:'POST', body: formData })
+    .then(() => alert('Settings Saved! Device Updating...'));
+}
+
+/* =========================================================
+   Focus / Visualizer / Reboot
+   ========================================================= */
+function toggleFocus(){
+  fetch('/api/focus/toggle', { method:'POST' })
+    .then(res => res.text())
+    .then(txt => alert("Focus Mode: " + txt));
+}
+function toggleVisualizer(){
+  fetch('/api/visualizer/toggle', { method:'POST' })
+    .then(res => res.text())
+    .then(txt => alert("Visualizer Mode: " + txt))
+    .catch(err => alert("Error toggling Visualizer: " + err));
+}
+function rebootDevice(){
+  if(confirm("Are you sure you want to reboot the Matrix?")){
+    fetch('/api/reboot')
+      .then(() => {
+        alert("Rebooting... Page will reload in 15 seconds.");
+        setTimeout(() => location.reload(), 15000);
+      });
+  }
+}
+
+/* =========================================================
+   Config Import / Export
+   ========================================================= */
+function exportConfig(){
+  window.location.href = "/api/config/export";
+}
+document.getElementById('importConfigFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+
+  if(!file.name.toLowerCase().endsWith('.json')){
+    alert("Please select a valid .json file");
+    e.target.value = "";
+    return;
+  }
+  if(!confirm("Importing config will overwrite ALL current settings.\n\nContinue?")){
+    e.target.value = "";
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append("config", file);
+
+  fetch("/api/config/import", { method:"POST", body: fd })
+    .then(res => res.text())
+    .then(msg => {
+      alert(msg + "\n\nDevice will reboot.");
+      setTimeout(() => location.reload(), 5000);
+    })
+    .catch(() => alert("Config import failed"));
+
+  e.target.value = "";
+});
+
+function resetConfig() {
+  if (!confirm("This will erase ALL configuration and restore factory defaults.\n\nContinue?"))
+    return;
+
+  if (!confirm("Last warning: this action cannot be undone.\n\nProceed with reset?"))
+    return;
+
+  fetch("/api/config/reset", { method: "POST" })
+    .then(res => res.text())
+    .then(msg => {
+      alert(msg);
+      setTimeout(() => location.reload(), 8000);
+    })
+    .catch(() => alert("Failed to reset configuration"));
+}
+
+
+/* =========================================================
+   GIF processing
+   ========================================================= */
+let processedBlob = null;
+
+function getSelectedMatrixSize(){
+  const dd = document.getElementById('matrixSizeSelect');
+  const raw = dd ? dd.value : '64x32';
+  const m = /^(\d+)\s*x\s*(\d+)$/i.exec(raw || '');
+  if(!m) return { w:64, h:32 };
+  const w = parseInt(m[1],10), h = parseInt(m[2],10);
+  if((w===80 && h===40) || (w===64 && h===32) || (w===128 && h===64)) return { w, h };
+  return { w:64, h:32 };
+}
+
+function handleFile(file){
+  if(!file || file.type !== 'image/gif') return alert("Not a GIF!");
+  const reader = new FileReader();
+  reader.onload = (e) => processGif(new Uint8Array(e.target.result));
+  reader.readAsArrayBuffer(file);
+}
+
+function processGif(data){
+  const statusEl = document.getElementById('gif-status');
+  const uploadBtn = document.getElementById('upload-btn');
+  const previewCvs = document.getElementById('preview');
+
+  const { w: targetW, h: targetH } = getSelectedMatrixSize();
+  if(statusEl) statusEl.innerText = "Processing...";
+
+  try{
+    const gif = new GifReader(data);
+    const numFrames = gif.numFrames();
+
+    const totalSize = 4 + (numFrames * (2 + (targetW * targetH * 2)));
+    const outputBuffer = new Uint8Array(totalSize);
+    let ptr = 0;
+
+    // Header
+    outputBuffer[ptr++] = targetW;
+    outputBuffer[ptr++] = targetH;
+    outputBuffer[ptr++] = numFrames;
+    outputBuffer[ptr++] = 0;
+
+    // Work canvas
+    const cvs = document.createElement('canvas');
+    cvs.width = gif.width; cvs.height = gif.height;
+    const ctx = cvs.getContext('2d');
+
+    // Preview canvas
+    previewCvs.style.display = 'inline-block';
+    previewCvs.width = targetW;
+    previewCvs.height = targetH;
+    const previewCtx = previewCvs.getContext('2d');
+
+    const resizeMode = document.getElementById('resize-mode')?.value || 'stretch';
+    const frameInfo = new Uint8Array(gif.width * gif.height * 4);
+
+    for(let i=0; i<numFrames; i++){
+      gif.decodeAndBlitFrameRGBA(i, frameInfo);
+
+      const imgData = new ImageData(new Uint8ClampedArray(frameInfo), gif.width, gif.height);
+      ctx.putImageData(imgData, 0, 0);
+
+      previewCtx.fillStyle = "black";
+      previewCtx.fillRect(0,0,targetW,targetH);
+
+      let dx=0, dy=0, dw=targetW, dh=targetH;
+      if(resizeMode === 'fit'){
+        const scale = Math.min(targetW / gif.width, targetH / gif.height);
+        dw = gif.width * scale; dh = gif.height * scale;
+        dx = (targetW - dw)/2; dy = (targetH - dh)/2;
+      }else if(resizeMode === 'crop'){
+        const scale = Math.max(targetW / gif.width, targetH / gif.height);
+        dw = gif.width * scale; dh = gif.height * scale;
+        dx = (targetW - dw)/2; dy = (targetH - dh)/2;
+      }
+      previewCtx.drawImage(cvs, dx, dy, dw, dh);
+
+      const finalData = previewCtx.getImageData(0,0,targetW,targetH).data;
+      const delay = Math.max(gif.frameInfo(i).delay * 10, 20);
+
+      outputBuffer[ptr++] = delay & 0xFF;
+      outputBuffer[ptr++] = (delay >> 8) & 0xFF;
+
+      for(let p=0; p<finalData.length; p+=4){
+        const r = finalData[p], g = finalData[p+1], b = finalData[p+2];
+        const rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+        outputBuffer[ptr++] = rgb565 & 0xFF;
+        outputBuffer[ptr++] = (rgb565 >> 8) & 0xFF;
+      }
+    }
+
+    processedBlob = new Blob([outputBuffer], { type:"application/octet-stream" });
+    if(statusEl) statusEl.innerText = `Ready! (${(totalSize/1024).toFixed(1)} KB)`;
+    if(uploadBtn) uploadBtn.disabled = false;
+
+  }catch(err){
+    console.error(err);
+    alert("Error parsing GIF.");
+    if(statusEl) statusEl.innerText = "Error parsing GIF.";
+  }
+}
+
+function uploadGif(){
+  if(!processedBlob) return alert("No GIF processed yet.");
+  const btn = document.getElementById('upload-btn');
+  if(btn){
+    btn.disabled = true;
+    btn.innerText = "Uploading...";
+  }
+  const fd = new FormData();
+  fd.append("file", processedBlob, "anim.bin");
+  fetch('/upload', { method:'POST', body: fd })
+    .then(() => {
+      if(btn){
+        btn.innerText = "Complete!";
+        setTimeout(() => { btn.disabled = false; btn.innerText = "Upload GIF"; }, 2000);
+      }
+    });
+}
+
+function deleteGif(){
+  if(confirm("Delete current GIF?")){
+    fetch('/api/delete_gif', { method:'POST' })
+      .then(() => alert("Deleted"));
+  }
+}
+
+/* =========================================================
+   Update banner logic
+   ========================================================= */
+const LATEST_URL = 'https://update.infomatrix3d.com/xlatest.txt';
+const UPDATE_URL = 'https://update.infomatrix3d.com';
+const REQUEST_TIMEOUT_MS = 2000;
+const CHECK_KEY = 'updateCheck';
+const CHECK_TTL_MS = 12 * 60 * 60 * 1000;
+
+function getCurrentVersion(){
+  const el = document.querySelector('#appVersion');
+  if(el && el.dataset.version) return el.dataset.version.trim();
+  const meta = document.querySelector('meta[name="app-version"]');
+  return meta ? meta.content.trim() : null;
+}
+function cmpSemver(a,b){
+  const toNums = (v) => (v || '0.0.0').split('-')[0].split('.').map(n => parseInt(n,10) || 0);
+  const [a1=0,a2=0,a3=0] = toNums(a);
+  const [b1=0,b2=0,b3=0] = toNums(b);
+  if(a1 !== b1) return a1 < b1 ? -1 : 1;
+  if(a2 !== b2) return a2 < b2 ? -1 : 1;
+  if(a3 !== b3) return a3 < b3 ? -1 : 1;
+  return 0;
+}
+function showBanner(current, latest){
+  const banner = document.getElementById('updateBanner');
+  const text = document.getElementById('updateText');
+  const link = document.getElementById('updateLink');
+  if(!banner || !text || !link) return;
+  text.textContent = `Update ${latest} available.`;
+  link.href = UPDATE_URL;
+  banner.classList.add('show');
+}
+async function fetchLatestVersionWithTimeout(url, timeoutMs){
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, {
+      method:'GET',
+      mode:'cors',
+      cache:'no-cache',
+      credentials:'omit',
+      signal: controller.signal
+    });
+    clearTimeout(t);
+    if(!res.ok) throw new Error(`Version endpoint failed: ${res.status}`);
+    const txt = (await res.text()).trim();
+    if(!/^\d+(\.\d+){0,2}([\-+][A-Za-z0-9.+-]+)?$/.test(txt)) throw new Error("Invalid version format: " + txt);
+    return txt;
+  }catch(err){
+    clearTimeout(t);
+    console.debug("Update check error:", err.message || err);
+    return null;
+  }
+}
+async function checkForUpdates(){
+  const current = getCurrentVersion();
+  if(!current) return;
+
+  let cached = null;
+  try{ cached = JSON.parse(localStorage.getItem(CHECK_KEY) || 'null'); }catch(e){}
+  const now = Date.now();
+
+  if(cached && cached.latest && (now - cached.time) < CHECK_TTL_MS){
+    if(cmpSemver(current, cached.latest) === -1) showBanner(current, cached.latest);
+    return;
+  }
+
+  const latest = await fetchLatestVersionWithTimeout(LATEST_URL, REQUEST_TIMEOUT_MS);
+  if(!latest) return;
+
+  try{ localStorage.setItem(CHECK_KEY, JSON.stringify({ time: now, latest })); }catch(e){}
+  if(cmpSemver(current, latest) === -1) showBanner(current, latest);
+}
+
+/* =========================================================
+   Init
+   ========================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+  restoreTab();
+
+  // Night mode toggle UI
+  const nModeEl = document.getElementById('nMode');
+  if(nModeEl){
+    nModeEl.addEventListener('change', function(){
+      const s = document.getElementById('night-settings');
+      if(s) s.style.display = this.checked ? 'block' : 'none';
+    });
+  }
+
+  // Exchange enablement
+  const keyEl = document.getElementById('finnhub');
+  if(keyEl) keyEl.addEventListener('input', updateExchangeState);
+  updateExchangeState();
+
+  // GIF events
   const dz = document.getElementById('drop-zone');
   const inp = document.getElementById('file-input');
-  dz.onclick = () => inp.click();
-  dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('hover'); };
-  dz.ondrop = (e) => { e.preventDefault(); dz.classList.remove('hover'); handleFile(e.dataTransfer.files[0]); };
-  inp.onchange = (e) => handleFile(e.target.files[0]);
-
-  function handleFile(file) {
-    if (!file || file.type !== 'image/gif') return alert("Not a GIF!");
-    const reader = new FileReader();
-    reader.onload = (e) => processGif(new Uint8Array(e.target.result));
-    reader.readAsArrayBuffer(file);
+  if(dz && inp){
+    dz.onclick = () => inp.click();
+    dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('hover'); };
+    dz.ondragleave = () => dz.classList.remove('hover');
+    dz.ondrop = (e) => {
+      e.preventDefault();
+      dz.classList.remove('hover');
+      handleFile(e.dataTransfer.files[0]);
+    };
+    inp.onchange = (e) => handleFile(e.target.files[0]);
   }
 
-   function toggleFocus() {
-    fetch('/api/focus/toggle', { method: 'POST' })
-      .then(res => res.text())
-      .then(txt => alert("Focus Mode: " + txt));
-   }
-
-   function rebootDevice() {
-     if (confirm("Are you sure you want to reboot the Matrix?")) {
-       fetch('/api/reboot') 
-         .then(() => {
-           alert("Rebooting... Page will reload in 15 seconds.");
-           setTimeout(() => location.reload(), 15000);
-         });
-     }
-   }
-   
-   function toggleStationField() {
-    const mode = document.getElementById('cMode').value;
-    document.getElementById('station-group').style.display = (mode === 'Train') ? 'block' : 'none';
-   }
-   
-   
-   
- // ---- Config ----
-  const LATEST_URL = 'https://update.infomatrix3d.com/latest.txt';
-  const UPDATE_URL = 'https://update.infomatrix3d.com';
-  const REQUEST_TIMEOUT_MS = 2500;            // keep the page responsive
-  const CHECK_KEY = 'updateCheck';            // localStorage key
-  const CHECK_TTL_MS = 12 * 60 * 60 * 1000;   // 12 hours
-
-  // ---- Helpers ----
-  function getCurrentVersion() {
-    const el = document.querySelector('#appVersion');
-    if (el && el.dataset.version) return el.dataset.version.trim();
-    const meta = document.querySelector('meta[name="app-version"]');
-    return meta ? meta.content.trim() : null;
-  }
-
-  // Compare major.minor.patch; returns -1 if a<b, 0 equal, 1 a>b
-  function cmpSemver(a, b) {
-    const toNums = (v) => (v || '0.0.0').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
-    const [a1=0, a2=0, a3=0] = toNums(a);
-    const [b1=0, b2=0, b3=0] = toNums(b);
-    if (a1 !== b1) return a1 < b1 ? -1 : 1;
-    if (a2 !== b2) return a2 < b2 ? -1 : 1;
-    if (a3 !== b3) return a3 < b3 ? -1 : 1;
-    return 0;
-  }
-
-  function showBanner(current, latest) {
-    const banner = document.getElementById('updateBanner');
-    const text = document.getElementById('updateText');
-    const link = document.getElementById('updateLink');
-    if (!banner || !text || !link) return;
-    text.textContent = `Update ${latest} available.`;
-    link.href = UPDATE_URL;
-    banner.classList.add('show');
-  }
-
-  async function fetchLatestVersionWithTimeout(url, timeoutMs) {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        cache: 'no-cache',   // allow HTTP revalidation but don't use a stale entry
-        credentials: 'omit',
-        signal: controller.signal
-      });
-      clearTimeout(t);
-      if (!res.ok) throw new Error(`Version endpoint failed: ${res.status}`);
-      const txt = (await res.text()).trim();
-      // Defensive validation (semver-ish)
-      if (!/^\d+(\.\d+){0,2}([\-+][A-Za-z0-9.+-]+)?$/.test(txt)) {
-        throw new Error('Invalid version format: ' + txt);
-      }
-      return txt;
-    } catch (err) {
-      clearTimeout(t);
-      console.debug('Update check error:', err.message || err);
-      return null; // fail-safe
-    }
-  }
-
-  async function checkForUpdates() {
-    const current = getCurrentVersion();
-    if (!current) return;
-
-    // 1) Try local cache first
-    let cached;
-    try {
-      cached = JSON.parse(localStorage.getItem(CHECK_KEY) || 'null');
-    } catch (_) { /* ignore */ }
-
-    const now = Date.now();
-
-    // If cached within TTL, use it immediately (no network)
-    if (cached && cached.latest && (now - cached.time) < CHECK_TTL_MS) {
-      if (cmpSemver(current, cached.latest) === -1) {
-        showBanner(current, cached.latest);
-      }
-      return; // done; revalidation will happen on a future visit after TTL
-    }
-
-    // 2) Revalidate (network) because cache is missing or expired
-    const latest = await fetchLatestVersionWithTimeout(LATEST_URL, REQUEST_TIMEOUT_MS);
-
-    // If endpoint fails, do nothing (page stays fully functional)
-    if (!latest) return;
-
-    // 3) Update the local cache and show banner if newer
-    try {
-      localStorage.setItem(CHECK_KEY, JSON.stringify({ time: now, latest }));
-    } catch (_) { /* ignore storage errors */ }
-
-    if (cmpSemver(current, latest) === -1) {
-      showBanner(current, latest);
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', checkForUpdates);
-
-
-   function getSelectedMatrixSize() {
-    // Try radios first; fall back to dropdown
-    const radio = document.querySelector('input[name="matrixSize"]:checked');
-    const dd = document.getElementById('matrixSizeSelect');
-    const raw = radio ? radio.value : (dd ? dd.value : null);
-    const m = /^(\d+)\s*x\s*(\d+)$/i.exec(raw || '');
-    if (!m) return { w: 64, h: 32 }; // default if not found
-    
-    const w = parseInt(m[1], 10), h = parseInt(m[2], 10);
-    
-    // Allow 80x40, 64x32, AND 128x64
-    // --- SYNTAX FIXED BELOW ---
-    if ((w === 80 && h === 40) || (w === 64 && h === 32) || (w === 128 && h === 64)) {
-        return { w, h };
-    }
-    
-    return { w: 64, h: 32 };
-  }
-  
-  function toggleVisualizer() {
-    fetch('/api/visualizer/toggle', { method: 'POST' })
-      .then(res => res.text())
-      .then(txt => {
-          // Optional: Provide visual feedback
-          alert("Visualizer Mode: " + txt);
-      })
-      .catch(err => alert("Error toggling Visualizer: " + err));
-   }
-
-  
-  function processGif(data) {
-    const { w: targetW, h: targetH } = getSelectedMatrixSize();  // <-- NEW
-    document.getElementById('gif-status').innerText = "Processing...";
-
-    try {
-      const gif = new GifReader(data);
-      const numFrames = gif.numFrames();
-
-      // Total size:
-      // 4 bytes header (W,H,frames,flags) +
-      // per frame: 2 bytes delay + (targetW * targetH * 2) bytes RGB565
-      const totalSize = 4 + (numFrames * (2 + (targetW * targetH * 2)));
-      const outputBuffer = new Uint8Array(totalSize);
-      let ptr = 0;
-
-      // Header: width, height, frame count, flags (unchanged behavior)
-      outputBuffer[ptr++] = targetW;           // <-- NEW
-      outputBuffer[ptr++] = targetH;           // <-- NEW
-      outputBuffer[ptr++] = numFrames;
-      outputBuffer[ptr++] = 0;                 // flags/reserved
-
-      // Work canvas: original GIF frame size
-      const cvs = document.createElement('canvas');
-      cvs.width = gif.width; cvs.height = gif.height;
-      const ctx = cvs.getContext('2d');
-
-      // Preview canvas: target matrix size
-      const previewCvs = document.getElementById('preview');
-      previewCvs.style.display = 'inline-block';
-      previewCvs.width = targetW;              // <-- NEW
-      previewCvs.height = targetH;             // <-- NEW
-      const previewCtx = previewCvs.getContext('2d');
-
-      const resizeMode = document.getElementById('resize-mode').value;
-      const frameInfo = new Uint8Array(gif.width * gif.height * 4);
-
-      for (let i = 0; i < numFrames; i++) {
-        // Decode frame into RGBA
-        gif.decodeAndBlitFrameRGBA(i, frameInfo);
-
-        // Draw original frame into work canvas
-        const imgData = new ImageData(new Uint8ClampedArray(frameInfo), gif.width, gif.height);
-        ctx.putImageData(imgData, 0, 0);
-
-        // Clear preview canvas (background black like your original)
-        previewCtx.fillStyle = "black";
-        previewCtx.fillRect(0, 0, targetW, targetH);              // <-- NEW
-
-        // Compute draw rect based on resize mode
-        let dx = 0, dy = 0, dw = targetW, dh = targetH;           // <-- NEW
-
-        if (resizeMode === 'fit') {
-          const scale = Math.min(targetW / gif.width, targetH / gif.height);
-          dw = gif.width * scale; dh = gif.height * scale;
-          dx = (targetW - dw) / 2; dy = (targetH - dh) / 2;
-        } else if (resizeMode === 'crop') {
-          const scale = Math.max(targetW / gif.width, targetH / gif.height);
-          dw = gif.width * scale; dh = gif.height * scale;
-          dx = (targetW - dw) / 2; dy = (targetH - dh) / 2;
-        }
-        // 'stretch' uses full targetW/targetH (default above)
-
-        // Draw resized frame to preview canvas
-        previewCtx.drawImage(cvs, dx, dy, dw, dh);
-
-        // Read final target-sized RGBA
-        const finalData = previewCtx.getImageData(0, 0, targetW, targetH).data; // <-- NEW
-
-        // Delay: same as your logic (GIF delay*10, minimum 20ms)
-        const delay = Math.max(gif.frameInfo(i).delay * 10, 20);
-        outputBuffer[ptr++] = delay & 0xFF;
-        outputBuffer[ptr++] = (delay >> 8) & 0xFF;
-
-        // Convert RGBA -> RGB565 (little-endian in your writer)
-        for (let p = 0; p < finalData.length; p += 4) {
-          const r = finalData[p], g = finalData[p + 1], b = finalData[p + 2];
-          const rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
-          outputBuffer[ptr++] = rgb565 & 0xFF;
-          outputBuffer[ptr++] = (rgb565 >> 8) & 0xFF;
-        }
-      }
-
-      processedBlob = new Blob([outputBuffer], { type: "application/octet-stream" });
-      document.getElementById('gif-status').innerText = `Ready! (${(totalSize/1024).toFixed(1)} KB)`;
-      document.getElementById('upload-btn').disabled = false;
-
-    } catch (err) {
-      console.error(err);
-      alert("Error parsing GIF.");
-    }
-  }
-
-
-  function deleteGif() { if(confirm("Delete current GIF?")) fetch('/api/delete_gif', { method: 'POST' }).then(() => alert("Deleted")); }
-  function uploadGif() {
-    const btn = document.getElementById('upload-btn'); btn.disabled = true; btn.innerText = "Uploading...";
-    const fd = new FormData(); fd.append("file", processedBlob, "anim.bin");
-    fetch('/upload', { method: 'POST', body: fd }).then(() => { btn.innerText = "Complete!"; setTimeout(() => btn.disabled=false, 2000); });
-  }
-
-  window.onload = loadSettings;
+  // Load settings + update check
+  loadSettings();
+  checkForUpdates();
+});
 </script>
+
+
+<!-- Floating Save Bar -->
+<div id="save-bar">
+  <button class="btn primary" onclick="saveSettings()">
+    Save Settings
+  </button>
+</div>
+
 
 </body>
 </html>
