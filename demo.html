@@ -5,7 +5,6 @@
   <title>InfoMatrix Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- GIF decoder used by your existing GIF pipeline -->
   <script src="https://unpkg.com/omggif@1.0.10/omggif.js"></script>
 
   <style>
@@ -273,6 +272,25 @@
     @media(max-width: 860px){
       .two-col{ grid-template-columns: 1fr; }
     }
+	
+	.four-col{
+	  display:grid;
+	  grid-template-columns: 2fr 110px 1fr 1fr;
+	  gap: 12px;
+	}
+
+	@media(max-width: 860px){
+	  .four-col{
+		grid-template-columns: 1fr 1fr;
+	  }
+	}
+
+	@media(max-width: 560px){
+	  .four-col{
+		grid-template-columns: 1fr;
+	  }
+	}
+
 
     .mini-note{
       font-size: 11px;
@@ -323,6 +341,19 @@
       text-decoration: none;
       margin-left: 8px;
     }
+	
+	.wifi-status {
+	  display: inline-flex;
+	  align-items: center;
+	  gap: 4px;
+	  margin-top: 3px;
+	  font-size: 11px;
+	  color: var(--muted);
+	}
+
+	.wifi-status svg {
+	  flex-shrink: 0;
+	}
 
     .footer{
       margin-top: 14px;
@@ -330,6 +361,25 @@
       font-size: 12px;
       text-align:center;
     }
+
+    /* ----------------------------------
+       Embedded Pixlet Catalog Frame
+    ---------------------------------- */
+    .pixlet-catalog-card {
+      grid-column: span 2;
+    }
+    @media(max-width: 860px){
+      .pixlet-catalog-card { grid-column: span 1; }
+    }
+    .catalog-frame {
+      width: 100%;
+      height: 480px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #161616;
+      margin-top: 10px;
+    }
+	
   </style>
 </head>
 
@@ -346,7 +396,20 @@
           </svg>
           InfoMatrix Dashboard
         </h1>
+		
+
+	
         <div class="subtitle">Ultimate LED Ticker</div>
+		
+<!-- Clickable Wi-Fi Icon Link -->
+    <a href="/wifi.html" class="wifi-status" title="Wi-Fi Settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12.55a11 11 0 0 1 14 0"></path>
+        <path d="M8.5 16.5a6 6 0 0 1 7 0"></path>
+        <path d="M12 20h.01"></path>
+      </svg>
+    </a>
+
       </div>
 
       <div class="actions">
@@ -356,16 +419,15 @@
       </div>
     </header>
 
-    <!-- Tabs -->
     <nav class="tabs" aria-label="Dashboard tabs">
-      <button class="tab active" data-tab="general" onclick="openTab('general')">General</button>
-      <button class="tab" data-tab="stocks" onclick="openTab('stocks')">Stocks</button>
-      <button class="tab" data-tab="sports" onclick="openTab('sports')">Sports</button>
-      <button class="tab" data-tab="commute" onclick="openTab('commute')">Commute</button>
-      <button class="tab" data-tab="media" onclick="openTab('media')">Media</button>
-    </nav>
+	  <button class="tab active" data-tab="general" onclick="openTab('general')">General</button>
+	  <button class="tab" data-tab="stocks" onclick="openTab('stocks')">Stocks</button>
+	  <button class="tab" data-tab="sports" onclick="openTab('sports')">Sports</button>
+	  <button class="tab" data-tab="commute" onclick="openTab('commute')">Commute</button>
+	  <button class="tab" data-tab="custom" onclick="openTab('custom')">Custom</button>
+	  
+	</nav>
 
-    <!-- ===================== GENERAL ===================== -->
     <section class="tab-panel active" id="tab-general">
       <div class="grid">
 
@@ -466,8 +528,8 @@
               <input type="number" id="dNba">
             </div>
             <div>
-              <label>EPL</label>
-              <input type="number" id="durEpl">
+              <label>Soccer</label>
+              <input type="number" id="durSoccer">
             </div>
 
             <div>
@@ -508,6 +570,18 @@
           <div class="hint">Use the Focus toggle (top right) to enable/disable Focus mode.</div>
         </div>
 
+       <div class="card" style="margin-top:14px;">
+		  <h3>Live Display Preview</h3>
+		  <div class="row" style="margin-bottom:10px;">
+			<button id="preview-toggle-btn" class="btn primary" onclick="toggleLivePreview()">Show Preview</button>
+		  </div>
+		  
+		  <div id="matrix-preview-wrapper" style="display:none; text-align:center; margin-top:10px;">
+			<canvas id="liveMatrixCanvas" style="width:100%; max-width:360px; height:auto; background:#000; border:1px solid #555; border-radius:10px;"></canvas>
+		  </div>
+		  <div class="hint">Streams real-time LED frame data directly from infoMatrix</div>
+		</div>
+
         <div class="card" style="margin-top:14px;">
           <h3>Backup & Restore Config</h3>
 
@@ -526,19 +600,18 @@
           <div class="mini-note">
             Export downloads current <b>config.json</b>. Import overwrites configuration and may reboot the device.
           </div>
-        </div
+        </div>
 		</div>
 
       </div>
     </section>
 
-    <!-- ===================== STOCKS ===================== -->
     <section class="tab-panel" id="tab-stocks">
       <div class="grid">
         <div class="card">
           <h3>Symbols & Chart</h3>
           <label>Stock/Crypto/Forex (comma separated)</label>
-          <textarea id="stocks" rows="2" placeholder="AAPL, BTC-USD, TSLA" oninput="this.value=this.value.toUpperCase()"></textarea>
+          <textarea id="stocks" rows="2" placeholder="AAPL, BTC-USD, TSLA, ^DJI, CAD=X, GC=F, SU.TO" oninput="this.value=this.value.toUpperCase()"></textarea>
 
           <div class="two-col">
             <div>
@@ -564,7 +637,7 @@
 
           <div class="chip-row">
             <label><input type="checkbox" id="stockLogo"> Logo</label>
-            <label><input type="checkbox" id="splitScreen"> 4Split</label>
+           <!--   <label>   <input type="checkbox" id="splitScreen"> 4Split</label> -->
             <label><input type="checkbox" id="isUSA"> .US</label>
           </div>
 		   <p class="mini-note"><i>Reboot is required to initialize any logo.</i></p>
@@ -605,14 +678,13 @@
       </div>
     </section>
 
-    <!-- ===================== SPORTS ===================== -->
     <section class="tab-panel" id="tab-sports">
       <div class="card">
         <h3>Sports Configuration</h3>
 
 
         <details open>
-          <summary>Major Leagues <span class="muted">NBA / NFL / NHL / MLB / EPL</span></summary>
+          <summary>Major Leagues <span class="muted">NBA / NFL / NHL / MLB</span></summary>
 
           <div style="margin-top:10px;" class="two-col">
             <div>
@@ -635,22 +707,20 @@
               <input type="text" id="mlbTeam" placeholder="NYY,LAD,TOR or ALL" oninput="this.value=this.value.toUpperCase()">
             </div>
 
-            <div>
-              <label>EPL Teams</label>
-              <input type="text" id="eplTeam" placeholder="ARS,LIV,MUN or ALL" oninput="this.value=this.value.toUpperCase()">
-            </div>
+   
 
             <div>
               <label>Cricket Team / Series</label>
               <input type="text" id="cricketKeyword" placeholder="ENGLAND, ICC, TOP or ALL">
             </div>
 			
-			            <p class="mini-note"><i>Reboot is required to initialize any Sports logo.</i></p>
+
           </div>
+		  			            <p class="mini-note"><i>Reboot is required to initialize any Sports logo.</i></p>
         </details>
 
         <details>
-          <summary>NCAA <span class="muted">Teams + sport filters</span></summary>
+          <summary>NCAA <span class="muted">Sports</span></summary>
 
           <div style="margin-top:10px;">
             <label>NCAA Teams (comma separated or ALL)</label>
@@ -665,11 +735,27 @@
 
           </div>
         </details>
+		
+		       <details>
+          <summary>Soccer <span class="muted">Leagues</span></summary>
+
+          <div style="margin-top:10px;">
+            <label>Soccer Teams (comma separated or ALL)</label>
+            <input type="text" id="soccerTeams" placeholder="ARS,MAN or ALL" oninput="this.value=this.value.toUpperCase()">
+
+            <div class="chip-row" style="margin-top:10px;">
+              <label><input type="checkbox" id="soccerFifa"> FIFA Cup</label>
+              <label><input type="checkbox" id="soccerEpl"> English Premium</label>
+              <label><input type="checkbox" id="soccerUefa"> UEFA Champions</label>
+            </div>
+
+
+          </div>
+        </details>
 
       </div>
     </section>
 
-    <!-- ===================== COMMUTE ===================== -->
     <section class="tab-panel" id="tab-commute">
       <div class="grid">
         <div class="card">
@@ -718,13 +804,11 @@
       </div>
     </section>
 
-    <!-- ===================== MEDIA ===================== -->
-    <section class="tab-panel" id="tab-media">
+    <section class="tab-panel" id="tab-custom">
       <div class="grid">
 
-        <!-- Messages (moved here) -->
         <div class="card">
-          <h3>Messages</h3>
+          <h3>Banner</h3>
 
           <div class="row" style="align-items:flex-end;">
             <div style="flex:0 0 92px;">
@@ -770,12 +854,11 @@
             </div>
           </div>
 
-          <div class="hint">Message rotation timing is controlled in <b>General → Cycle Durations</b>.</div>
+
         </div>
 
-        <!-- GIF (moved here) -->
         <div class="card">
-          <h3>GIF / Animation</h3>
+          <h3>Animation Upload</h3>
 
           <div class="two-col">
             <div>
@@ -808,14 +891,109 @@
           </div>
         </div>
 
-      </div>
-    </section>
+			<div class="card pixlet-catalog-card">
+			  <h3>MQTT</h3>
 
-    <!-- Footer + Update -->
+			  <div class="chip-row" style="margin-top:8px;">
+				<label><input type="checkbox" id="mqttEnable"> Enable MQTT Listener</label>
+			  </div>
+
+			  <div class="four-col" style="margin-top:10px;">
+				<div>
+				  <label>Broker</label>
+				  <input type="text" id="mqttBroker" placeholder="e.g. 192.168.1.50 or broker.example.com">
+				</div>
+				<div>
+				  <label>Port</label>
+				  <input type="number" id="mqttPort" placeholder="1883" min="1" max="65535">
+				</div>
+				<div>
+				  <label>Username</label>
+				  <input type="text" id="mqttUser" placeholder="Optional">
+				</div>
+				<div>
+				  <label>Password</label>
+				  <input type="password" id="mqttPassword" placeholder="Optional">
+				</div>
+			  </div>
+			  <div class="two-col" style="margin-top:10px;">
+				<div>
+				  <label>Topic</label>
+				  <input type="text" id="mqttTopic" placeholder="infomatrix/text">
+				</div>
+				<div>
+				  <label>Client ID</label>
+				  <input type="text" id="mqttClientId" placeholder="Optional (auto-generated if blank)">
+				</div>
+			  </div>
+			  <div class="hint">
+				Receives JSON or plain text from the configured MQTT topic and shows it immediately on screen.
+			  </div>
+			</div>
+
+	   <div class="card pixlet-catalog-card">
+      <h3>Advanced User - Custom App</h3>
+
+      <label>App URLs (comma separated, max 5)</label>
+      <textarea
+        id="pixletUrls"
+        rows="3"
+        placeholder="Example: https://example.com/clock.webp, https://example.com/news.webp, https://tronbytserver.example.app/8e2101010/next?key=09a151b7524159386adc8f2519c99999"
+      ></textarea>
+
+      <div class="two-col">
+        <div>
+          <label>Mode Duration (seconds)</label>
+          <input type="number" id="dPixlet" placeholder="30">
+        </div>
+        <div>
+          <label>Per APP Duration (seconds)</label>
+          <input type="number" id="pixletItemDur" placeholder="8">
+        </div>
+      </div>
+
+      <div class="hint">
+       Supports <b>Tronbyt/Tidbyt</b> pixlet WebP image.</a> 
+      </div>
+    </div>
+
+
+     <div class="card pixlet-catalog-card">
+  <h3>Apps Catalog</h3>
+      <label for="catalogUrlInput">Catalog Source URL</label>
+      <div class="row" style="margin-bottom: 10px;">
+        <input 
+          type="text" 
+          id="catalogUrlInput" 
+          placeholder="https://pixlet.infomatrix3d.com/" 
+          oninput="updateCatalogSource(this.value)"
+        >
+        <button class="btn grey small" style="flex: 0 0 70px;" onclick="resetCatalogSource()">Reset</button>
+      </div>
+
+      <div class="hint">Select an app below, click "Copy GIF URL", and paste it into your configuration box above.</div>
+      <iframe 
+        id="catalogFrame"
+        class="catalog-frame" 
+        src="https://pixlet.infomatrix3d.com/" 
+        frameborder="0" 
+        loading="lazy" 
+        allow="clipboard-write"
+      ></iframe>
+
+
+</div>
+
+  </div>
+    </section>
+	
+
+
+
     <div class="footer">
-      <span id="appVersion" data-version="2.0.6">
+      <span id="appVersion" data-version="3.1.1">
         <a href="https://www.infomatrix3d.com/help.html" target="_blank" rel="noopener">
-          Help - infomatrix3d.com - v.2.0.6
+          HELP - infomatrix3d.com - v.3.1.1
         </a>
       </span>
     </div>
@@ -827,6 +1005,60 @@
   </div>
 
 <script>
+
+/* =========================================================
+   Pixlet Editable Catalog Helper Logic
+   ========================================================= */
+   
+
+   
+const DEFAULT_CATALOG_URL = "https://infomatrix3d.github.io/pixlet/";
+const CATALOG_STORAGE_KEY = "infomatrixCatalogUrl";
+
+function initCatalogSource() {
+  const inputEl = document.getElementById('catalogUrlInput');
+  const frameEl = document.getElementById('catalogFrame');
+  if (!inputEl || !frameEl) return;
+
+  try {
+    const savedUrl = localStorage.getItem(CATALOG_STORAGE_KEY);
+    if (savedUrl && savedUrl.trim().length > 0) {
+      inputEl.value = savedUrl;
+      frameEl.src = savedUrl;
+    } else {
+      inputEl.value = "";
+      frameEl.src = DEFAULT_CATALOG_URL;
+    }
+  } catch (e) {
+    frameEl.src = DEFAULT_CATALOG_URL;
+  }
+}
+
+function updateCatalogSource(val) {
+  const frameEl = document.getElementById('catalogFrame');
+  if (!frameEl) return;
+
+  const targetUrl = (val && val.trim().length > 0) ? val.trim() : DEFAULT_CATALOG_URL;
+  frameEl.src = targetUrl;
+
+  try {
+    localStorage.setItem(CATALOG_STORAGE_KEY, val.trim());
+  } catch (e) {}
+}
+
+function resetCatalogSource() {
+  const inputEl = document.getElementById('catalogUrlInput');
+  if (inputEl) inputEl.value = "";
+  updateCatalogSource("");
+}
+
+// Hook into your existing DOMContentLoaded listener to run at boot
+document.addEventListener('DOMContentLoaded', () => {
+  // ... your existing init functions (restoreTab, loadSettings, etc.) ...
+  initCatalogSource(); 
+});
+
+
 /* =========================================================
    Tabs (remembers selection)
    ========================================================= */
@@ -941,7 +1173,7 @@ function loadSettings(){
       if(document.getElementById('dCom')) document.getElementById('dCom').value = data.dCom || 30;
       if(document.getElementById('durNcaa')) document.getElementById('durNcaa').value = data.durNcaa || 30;
       if(document.getElementById('dNba')) document.getElementById('dNba').value = data.dNba || 30;
-      if(document.getElementById('durEpl')) document.getElementById('durEpl').value = data.durEpl || 30;
+      if(document.getElementById('durSoccer')) document.getElementById('durSoccer').value = data.durSoccer || 30;
       if(document.getElementById('dNfl')) document.getElementById('dNfl').value = data.dNfl || 30;
       if(document.getElementById('dNhl')) document.getElementById('dNhl').value = data.dNhl || 30;
       if(document.getElementById('dMlb')) document.getElementById('dMlb').value = data.dMlb || 30;
@@ -950,6 +1182,30 @@ function loadSettings(){
       // Focus
       if(document.getElementById('fWork')) document.getElementById('fWork').value = data.fWork || 25;
       if(document.getElementById('fBrk')) document.getElementById('fBrk').value = data.fBrk || 5;
+	  
+	  
+	  // MQTT
+      if (document.getElementById('mqttEnable')) {
+        document.getElementById('mqttEnable').checked = (data.mqttEnable === true);
+      }
+      if (document.getElementById('mqttBroker')) {
+        document.getElementById('mqttBroker').value = data.mqttBroker || "";
+      }
+      if (document.getElementById('mqttPort')) {
+        document.getElementById('mqttPort').value = data.mqttPort || 1883;
+      }
+      if (document.getElementById('mqttTopic')) {
+        document.getElementById('mqttTopic').value = data.mqttTopic || "infomatrix/text";
+      }
+      if (document.getElementById('mqttUser')) {
+        document.getElementById('mqttUser').value = data.mqttUser || "";
+      }
+      if (document.getElementById('mqttPassword')) {
+        document.getElementById('mqttPassword').value = data.mqttPassword || "";
+      }
+      if (document.getElementById('mqttClientId')) {
+        document.getElementById('mqttClientId').value = data.mqttClientId || "";
+      }
 
       // Commute
       if(document.getElementById('gKey')) document.getElementById('gKey').value = data.gKey || "";
@@ -966,7 +1222,7 @@ function loadSettings(){
       if(document.getElementById('nflTeam')) document.getElementById('nflTeam').value = data.nflTeam || "";
       if(document.getElementById('nhlTeam')) document.getElementById('nhlTeam').value = data.nhlTeam || "";
       if(document.getElementById('mlbTeam')) document.getElementById('mlbTeam').value = data.mlbTeam || "";
-      if(document.getElementById('eplTeam')) document.getElementById('eplTeam').value = data.eplTeam || "";
+
       if(document.getElementById('cricketKeyword')) document.getElementById('cricketKeyword').value = data.cricketKeyword || "";
 
       // NCAA
@@ -974,6 +1230,19 @@ function loadSettings(){
       if(document.getElementById('ncaaBasketball')) document.getElementById('ncaaBasketball').checked = (data.ncaaBasketball === true);
       if(document.getElementById('ncaaFootball')) document.getElementById('ncaaFootball').checked = (data.ncaaFootball === true);
       if(document.getElementById('ncaaBaseball')) document.getElementById('ncaaBaseball').checked = (data.ncaaBaseball === true);
+
+            //Soccer
+      if(document.getElementById('soccerTeams')) document.getElementById('soccerTeams').value = data.soccerTeams || "";
+      if(document.getElementById('soccerFifa')) document.getElementById('soccerFifa').checked = (data.soccerFifa === true);
+      if(document.getElementById('soccerEpl')) document.getElementById('soccerEpl').checked = (data.soccerEpl === true);
+      if(document.getElementById('soccerUefa')) document.getElementById('soccerUefa').checked = (data.soccerUefa === true);
+	  
+	  //pixlet
+		if(document.getElementById('pixletUrls')) document.getElementById('pixletUrls').value = data.pixletUrls || "";
+		if(document.getElementById('dPixlet')) document.getElementById('dPixlet').value = data.dPixlet || 100;
+		if(document.getElementById('pixletItemDur')) document.getElementById('pixletItemDur').value = data.pixletItemDur || 20;
+
+
 
       // Messages
       for(let i=1; i<=3; i++){
@@ -1049,13 +1318,22 @@ function saveSettings(){
   // Focus
   appendIf('fWork','fWork');
   appendIf('fBrk','fBrk');
+  
+  // MQTT
+  appendIf('mqttEnable', 'mqttEnable', true);
+  appendIf('mqttBroker', 'mqttBroker');
+  appendIf('mqttPort', 'mqttPort');
+  appendIf('mqttTopic', 'mqttTopic');
+  appendIf('mqttUser', 'mqttUser');
+  appendIf('mqttPassword', 'mqttPassword');
+  appendIf('mqttClientId', 'mqttClientId');
 
   // Sports teams
   appendIf('nbaTeam','nbaTeam');
   appendIf('nflTeam','nflTeam');
   appendIf('nhlTeam','nhlTeam');
   appendIf('mlbTeam','mlbTeam');
-  appendIf('eplTeam','eplTeam');
+ // appendIf('eplTeam','eplTeam');
   appendIf('cricketKeyword','cricketKeyword');
 
   // NCAA
@@ -1063,6 +1341,18 @@ function saveSettings(){
   appendIf('ncaaBasketball','ncaaBasketball',true);
   appendIf('ncaaFootball','ncaaFootball',true);
   appendIf('ncaaBaseball','ncaaBaseball',true);
+  
+    // soccer
+  appendIf('soccerTeams','soccerTeams');
+  appendIf('soccerFifa','soccerFifa',true);
+  appendIf('soccerEpl','soccerEpl',true);
+  appendIf('soccerUefa','soccerUefa',true);
+  
+  // pixlet
+  appendIf('pixletUrls', 'pixletUrls');
+  appendIf('dPixlet', 'dPixlet');
+  appendIf('pixletItemDur', 'pixletItemDur');
+
 
   // Commute
   appendIf('gKey','gKey');
@@ -1102,8 +1392,9 @@ function saveSettings(){
   appendIf('dMsg','dMsg');
   appendIf('dGif','dGif');
   appendIf('durNcaa','durNcaa');
+  appendIf('durSoccer','durSoccer');
   appendIf('dNba','dNba');
-  appendIf('durEpl','durEpl');
+  //appendIf('durEpl','durEpl');
   appendIf('dNfl','dNfl');
   appendIf('dNhl','dNhl');
   appendIf('dMlb','dMlb');
@@ -1112,6 +1403,108 @@ function saveSettings(){
   fetch('/api/save', { method:'POST', body: formData })
     .then(() => alert('Settings Saved! Device Updating...'));
 }
+
+	/* =========================================================
+	   Live Matrix Preview Streaming
+	   ========================================================= */
+	let isPreviewActive = false;
+	let previewTimeoutId = null;
+
+	function toggleLivePreview() {
+	  const wrapper = document.getElementById('matrix-preview-wrapper');
+	  const btn = document.getElementById('preview-toggle-btn');
+	  
+	  isPreviewActive = !isPreviewActive;
+
+	  if (isPreviewActive) {
+		wrapper.style.display = 'block';
+		btn.innerText = 'Hide Preview';
+		btn.classList.remove('primary');
+		btn.classList.add('grey');
+		fetchLiveFrame();
+	  } else {
+		wrapper.style.display = 'none';
+		btn.innerText = 'Show Preview';
+		btn.classList.remove('grey');
+		btn.classList.add('primary');
+		if (previewTimeoutId) clearTimeout(previewTimeoutId);
+	  }
+	}
+
+	async function fetchLiveFrame() {
+	  if (!isPreviewActive) return;
+
+	  // Slow down requests if browser tab is backgrounded
+	  if (document.hidden) {
+		previewTimeoutId = setTimeout(fetchLiveFrame, 10000);
+		return;
+	  }
+
+	  const canvas = document.getElementById('liveMatrixCanvas');
+	  const ctx = canvas.getContext('2d');
+	  const PITCH = 10;
+	  const RADIUS = 3.5;
+
+	  try {
+		const response = await fetch('/api/frame');
+		if (response.ok) {
+		  const cols = parseInt(response.headers.get('X-Width')) || 64;
+		  const rows = parseInt(response.headers.get('X-Height')) || 32;
+
+		  // Dynamically match canvas size to panel configuration
+		  if (canvas.width !== cols * PITCH || canvas.height !== rows * PITCH) {
+			canvas.width = cols * PITCH;
+			canvas.height = rows * PITCH;
+		  }
+
+		  const buffer = await response.arrayBuffer();
+		  const pixels = new Uint16Array(buffer);
+
+		  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		  for (let y = 0; y < rows; y++) {
+			for (let x = 0; x < cols; x++) {
+			  const rgb565 = pixels[y * cols + x];
+
+			  // Unpack RGB565 to 8-bit channels
+			  const r = ((rgb565 >> 11) & 0x1F) * 255 / 31;
+			  const g = ((rgb565 >> 5) & 0x3F) * 255 / 63;
+			  const b = (rgb565 & 0x1F) * 255 / 31;
+
+			  const cx = x * PITCH + PITCH / 2;
+			  const cy = y * PITCH + PITCH / 2;
+			  const color = `rgb(${r},${g},${b})`;
+
+			  ctx.beginPath();
+			  ctx.arc(cx, cy, RADIUS, 0, Math.PI * 2);
+			  ctx.fillStyle = color;
+
+			  if (rgb565 !== 0) {
+				ctx.shadowColor = color;
+				ctx.shadowBlur = 4;
+			  } else {
+				ctx.shadowBlur = 0;
+			  }
+			  ctx.fill();
+			}
+		  }
+		}
+	  } catch (err) {
+		console.error("Preview stream error:", err);
+	  }
+
+	  // Schedule next frame (~1 FPS)
+	  previewTimeoutId = setTimeout(fetchLiveFrame, 1000);
+	}
+
+	// Automatically turn off stream if tab switches away from "General"
+	const originalOpenTab = openTab;
+	openTab = function(name) {
+	  originalOpenTab(name);
+	  if (name !== 'general' && isPreviewActive) {
+		toggleLivePreview();
+	  }
+	};
 
 /* =========================================================
    Focus / Visualizer / Reboot
@@ -1397,6 +1790,7 @@ async function checkForUpdates(){
    ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
   restoreTab();
+ //  loadPixletUI(); 
 
   // Night mode toggle UI
   const nModeEl = document.getElementById('nMode');
@@ -1434,7 +1828,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 
-<!-- Floating Save Bar -->
 <div id="save-bar">
   <button class="btn primary" onclick="saveSettings()">
     Save Settings
