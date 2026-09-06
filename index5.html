@@ -1,0 +1,973 @@
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
+#include <Adafruit_GFX.h>
+#include <LittleFS.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <vector>
+#include <time.h> 
+#include "PixelItFont.h"
+
+#include <Crypto.h>
+#include <Ed25519.h>
+
+#include "esp_mac.h"
+
+// --- WEATHER ICONS (8x8 Bitmaps) ---
+const unsigned char icon_sun[] PROGMEM = {
+  0x24, 0x00, 0xbd, 0x7e, 0x7e, 0xbd, 0x00, 0x24
+};
+const unsigned char icon_cloud[] PROGMEM = {
+  0x00, 0x00, 0x0e, 0x3b, 0x71, 0x7f, 0x1e, 0x00
+};
+const unsigned char icon_rain[] PROGMEM = {
+  0x00, 0x1c, 0x3e, 0x7f, 0x7f, 0x22, 0x14, 0x08
+};
+const unsigned char icon_snow[] PROGMEM = {
+  0x00, 0x5a, 0x24, 0x5a, 0x24, 0x5a, 0x00, 0x00
+};
+const unsigned char icon_storm[] PROGMEM = {
+  0x0c, 0x1e, 0x33, 0x33, 0x1e, 0x0c, 0x06, 0x03
+};
+const unsigned char icon_moon[] PROGMEM = {
+  0x1c, 0x3e, 0x7e, 0x70, 0x70, 0x7e, 0x3e, 0x1c 
+};
+
+
+// --- HARDWARE CONFIG ---
+#define PANEL_RES_X  128
+#define PANEL_RES_Y  16
+#define PANEL_CHAIN  1
+
+// --- VIRTUAL PANEL WRAPPER ---
+class VirtualPanel : public Adafruit_GFX {
+  public:
+    MatrixPanel_I2S_DMA *dma;
+    VirtualPanel(MatrixPanel_I2S_DMA *_dma) : Adafruit_GFX(64, 32), dma(_dma) {}
+    void drawPixel(int16_t x, int16_t y, uint16_t color) override {
+      if (x < 0 || x >= 64 || y < 0 || y >= 32) return;
+      int strip = y / 8; 
+      int16_t ly = (y % 8) + ((strip >= 2) ? 8 : 0);
+      bool isEvenStrip = (strip % 2 == 0);
+      int16_t lx = x + (isEvenStrip ? 64 : 0);
+      dma->drawPixel(lx, ly, color);
+    }
+    void fillScreen(uint16_t color) { dma->fillScreen(color); }
+};
+
+MatrixPanel_I2S_DMA* dma = nullptr;
+VirtualPanel* display = nullptr;
+AsyncWebServer server(80);
+
+// --- GLOBAL CONFIGURATION ---
+struct Config {
+  String ssid;
+  String pass;
+  std::vector<String> stocks;
+  String weatherKey;  
+  String city;        
+  String message;     
+  int timezoneOffset;
+  String graphRange; // NEW: Stores "1d", "1mo", "6mo", "1y"
+};
+Config systemConfig;
+
+const int DURATION_GIF = 30000; // Play GIF for 30 seconds before switching
+
+// GIF State Variables
+File gifFile;
+bool isGifOpen = false;
+unsigned long lastGifFrame = 0;
+int gifDelay = 100;
+int gifFrames = 0;
+int gifWidth = 0;
+int gifHeight = 0;
+int currentFrame = 0;
+
+
+// --- TIMING CONFIGURATION (in milliseconds) ---
+const int DURATION_STOCK   = 60000;  // Stay on Stocks for 60 seconds
+const int DURATION_WEATHER = 10000;  // Stay on Weather for 10 seconds
+const int DURATION_MSG     = 15000;  // Stay on Message for 15 seconds
+
+
+// Thread Flags
+bool configNeedsUpdate = false;
+bool wifiNeedsSave = false;
+String pendingSSID = "";
+String pendingPass = "";
+bool isAPMode = false;
+
+// State Machine
+enum Mode { MODE_STOCK, MODE_WEATHER, MODE_MESSAGE, MODE_GIF };
+
+
+Mode currentMode = MODE_STOCK;
+unsigned long lastModeSwitch = 0;
+const int MODE_DURATION = 10000; 
+
+// Data Variables
+int currentStockIndex = 0;
+float prices[64];
+int dataCount = 0;
+String currentSymbol = "";
+String currentPrice = "Booting...";
+float percentChange = 0.0;
+bool isStockUp = true;
+unsigned long lastStockFetch = 0;
+
+String weatherTemp = "--";
+String weatherDesc = "";
+int weatherId = 800;
+unsigned long lastWeatherFetch = 0;
+
+// --- PROTOTYPES ---
+void loadConfig(); 
+void saveConfig(); 
+void setupWiFi();
+void fetchYahooData(String symbol);
+void fetchWeather();
+void drawLineGraph(float *data, int count);
+void drawStockScreen();
+void drawWeatherScreen();
+void drawMessageScreen();
+long mapFloat(float x, float in_min, float in_max, long out_min, long out_max);
+
+String vers = "1.1.a";
+
+String serialDigits = "";
+
+//////////////// Licensing ///////////////
+
+void getSerial(){
+  uint8_t baseMac[6];
+  esp_read_mac(baseMac, ESP_MAC_WIFI_STA);
+  char macSuffixBuffer[9]; 
+
+  snprintf(macSuffixBuffer, sizeof(macSuffixBuffer), "%02X%02X%02X%02X", 
+           baseMac[2], baseMac[3], baseMac[4], baseMac[5]);
+
+  serialDigits = String(macSuffixBuffer);
+
+}
+
+
+/// GIF animation
+
+void playGif() {
+  // 1. Open File Logic
+  if (!isGifOpen) {
+    if (LittleFS.exists("/anim.bin")) {
+      gifFile = LittleFS.open("/anim.bin", "r");
+      
+      if (gifFile.size() > 4) {
+        gifWidth  = gifFile.read();
+        gifHeight = gifFile.read();
+        gifFrames = gifFile.read();
+        gifFile.read(); // Reserved
+        
+        // Debug to Serial
+        Serial.printf("GIF: %dx%d, %d frames\n", gifWidth, gifHeight, gifFrames);
+
+        isGifOpen = true;
+        currentFrame = 0;
+        lastGifFrame = 0;
+
+        // SIZE CHECK
+        if (gifWidth != 64 || gifHeight != 32) {
+          display->fillScreen(0);
+          display->setCursor(0, 0);
+          display->setTextColor(dma->color565(255, 0, 0));
+          display->print("Size Err");
+          display->setCursor(0, 10);
+          display->print(gifWidth); display->print("x"); display->print(gifHeight);
+          gifFile.close();
+          isGifOpen = false;
+          return;
+        }
+      } else {
+        // FILE EMPTY
+        display->fillScreen(0);
+        display->setCursor(0, 8);
+        display->setTextColor(dma->color565(255, 0, 0));
+        display->print("File Empty");
+        gifFile.close();
+        return;
+      }
+    } else {
+      // NO FILE FOUND
+      display->fillScreen(0);
+      display->setCursor(0, 8);
+      display->setTextColor(dma->color565(255, 0, 0));
+      display->print("No GIF File");
+      return;
+    }
+  }
+
+  // 2. Playback Logic
+  if (isGifOpen && (millis() - lastGifFrame > gifDelay)) {
+    
+    // Read Delay (2 bytes)
+    uint8_t d1 = gifFile.read();
+    uint8_t d2 = gifFile.read();
+    gifDelay = d1 | (d2 << 8);
+    if (gifDelay < 20) gifDelay = 20;
+
+    // Allocate Memory for 1 Frame (4096 bytes)
+    size_t frameSize = 64 * 32 * 2;
+    uint8_t* buffer = (uint8_t*)malloc(frameSize);
+    
+    if (buffer) {
+      // Read & Draw
+      if (gifFile.read(buffer, frameSize) == frameSize) {
+        dma->drawRGBBitmap(0, 0, (uint16_t*)buffer, 64, 32);
+      }
+      free(buffer);
+    } else {
+      // RAM ERROR
+      display->setCursor(0,0);
+      display->setTextColor(dma->color565(255, 0, 0));
+      display->print("RAM ERR");
+    }
+
+    lastGifFrame = millis();
+    currentFrame++;
+
+    // Loop
+    if (currentFrame >= gifFrames) {
+      gifFile.seek(4); // Skip header to restart
+      currentFrame = 0;
+    }
+  }
+}
+
+
+// ================================================================
+//                           SETUP
+// ================================================================
+void setup() {
+  Serial.begin(115200);
+
+  // 1. Hardware Init
+  HUB75_I2S_CFG cfg(PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN);
+  cfg.double_buff = true; 
+  cfg.clkphase = false;
+  dma = new MatrixPanel_I2S_DMA(cfg);
+  dma->begin();
+  dma->setBrightness8(60); 
+  display = new VirtualPanel(dma);
+  display->setTextWrap(false);
+  
+  // 2. Filesystem
+  if(!LittleFS.begin(true)){ Serial.println("LittleFS Failed"); }
+  loadConfig(); 
+
+  // 3. Network
+  setupWiFi();
+
+  // 4. Time
+  if(!isAPMode) {
+    configTime(systemConfig.timezoneOffset * 3600, 0, "pool.ntp.org", "time.nist.gov");
+    fetchWeather(); 
+  }
+
+  // 5. WEB ROUTES
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    String file = isAPMode ? "/wifi.html" : "/index.html";
+    if (LittleFS.exists(file)) {
+      request->send(LittleFS, file, "text/html");
+    } else {
+      request->send(200, "text/plain", isAPMode ? "Upload wifi.html" : "Upload index.html");
+    }
+  });
+
+  server.serveStatic("/", LittleFS, "/");
+
+  server.on("/savewifi", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (request->hasParam("ssid") && request->hasParam("pass")) {
+      systemConfig.ssid = request->getParam("ssid")->value();
+      systemConfig.pass = request->getParam("pass")->value();
+      wifiNeedsSave = true;
+      request->send(200, "text/html", "Saved! Device restarting...");
+    } else {
+      request->send(400, "text/plain", "Missing Parameters");
+    }
+  });
+
+  server.on("/api/save", HTTP_POST, [](AsyncWebServerRequest *request){
+      if(request->hasParam("stocks", true)) {
+        String s = request->getParam("stocks", true)->value();
+        systemConfig.stocks.clear();
+        int r = 0; 
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == ',') {
+                String token = s.substring(r, i);
+                token.trim(); token.toUpperCase();
+                if(token.length()>0) systemConfig.stocks.push_back(token);
+                r = i + 1;
+            }
+        }
+        String token = s.substring(r);
+        token.trim(); token.toUpperCase();
+        if(token.length()>0) systemConfig.stocks.push_back(token);
+      }
+      if(request->hasParam("weatherKey", true)) systemConfig.weatherKey = request->getParam("weatherKey", true)->value();
+      if(request->hasParam("city", true)) systemConfig.city = request->getParam("city", true)->value();
+      if(request->hasParam("message", true)) systemConfig.message = request->getParam("message", true)->value();
+      if(request->hasParam("tz", true)) systemConfig.timezoneOffset = request->getParam("tz", true)->value().toInt();
+      
+      // NEW: Save Range
+      if(request->hasParam("range", true)) systemConfig.graphRange = request->getParam("range", true)->value();
+
+      saveConfig();
+      configTime(systemConfig.timezoneOffset * 3600, 0, "pool.ntp.org");
+      request->send(200, "text/plain", "Saved");
+      currentMode = MODE_STOCK; 
+  });
+
+  // Add this API endpoint to delete the GIF file
+  server.on("/api/delete_gif", HTTP_POST, [](AsyncWebServerRequest *request){
+    if (LittleFS.exists("/anim.bin")) {
+      LittleFS.remove("/anim.bin");
+      // Force close file if it's currently playing
+      if (isGifOpen) {
+        gifFile.close();
+        isGifOpen = false;
+      }
+      request->send(200, "text/plain", "Deleted");
+    } else {
+      request->send(404, "text/plain", "File not found");
+    }
+  });
+
+
+  server.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request){
+      DynamicJsonDocument doc(2048);
+      JsonArray arr = doc.createNestedArray("stocks");
+      for(String s : systemConfig.stocks) arr.add(s);
+      doc["weatherKey"] = systemConfig.weatherKey;
+      doc["city"] = systemConfig.city;
+      doc["message"] = systemConfig.message;
+      doc["tz"] = systemConfig.timezoneOffset;
+      doc["range"] = systemConfig.graphRange; // NEW: Send current range to UI
+      String json;
+      serializeJson(doc, json);
+      request->send(200, "application/json", json);
+  });
+
+// --- UPLOAD HANDLER (FIX) ---
+  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "Upload OK");
+  }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
+    // 1. Open File on First Chunk
+    if (!index) {
+      Serial.printf("Upload Start: %s\n", filename.c_str());
+      // Force filename to /anim.bin if it comes from the GIF tool
+      if (filename == "anim.bin") {
+         if (LittleFS.exists("/anim.bin")) LittleFS.remove("/anim.bin");
+         request->_tempFile = LittleFS.open("/anim.bin", "w");
+      }
+    }
+    // 2. Write Data
+    if (request->_tempFile) {
+      request->_tempFile.write(data, len);
+    }
+    // 3. Close on Final Chunk
+    if (final) {
+      if (request->_tempFile) {
+        request->_tempFile.close();
+        Serial.printf("Upload Complete: %u bytes\n", index + len);
+      }
+    }
+  });
+
+
+  server.onNotFound([](AsyncWebServerRequest *request) {
+    if (isAPMode) request->redirect("/");
+    else request->send(404, "text/plain", "Not Found");
+  });
+
+  server.begin();
+  
+  if(!isAPMode && systemConfig.stocks.size() > 0) {
+    currentSymbol = systemConfig.stocks[0];
+    fetchYahooData(currentSymbol);
+  }
+}
+
+// ================================================================
+//                           LOOP
+// ================================================================
+void loop() {
+  if (wifiNeedsSave) {
+    saveConfig();
+    delay(2000);
+    ESP.restart();
+  }
+
+  if (isAPMode) {
+    
+     display->setFont(&PixelItFont);
+     display->fillScreen(0);
+     display->setCursor(0,5);
+     display->setTextColor(dma->color565(255, 255, 0));
+     display->print("SETUP MODE");
+     display->setCursor(0, 13);
+     display->setTextColor(dma->color565(0, 255, 255));
+     display->print("WiFi: ");
+     display->setCursor(18, 13);
+     getSerial();
+     display->print(serialDigits);
+     display->setCursor(0, 20);
+     display->print("Pass: 12345678");
+     display->setCursor(0, 27);
+     display->print("IP: 192.168.4.1");
+     dma->flipDMABuffer();
+     delay(100);
+     return;
+  }
+
+ // Determine how long the CURRENT mode should last
+  unsigned long currentLimit = DURATION_STOCK; 
+  if (currentMode == MODE_WEATHER) currentLimit = DURATION_WEATHER;
+  if (currentMode == MODE_MESSAGE) currentLimit = DURATION_MSG;
+  if (currentMode == MODE_GIF) currentLimit = DURATION_GIF;
+
+  // Check if it is time to switch modes
+  if (millis() - lastModeSwitch > currentLimit) {
+    lastModeSwitch = millis();
+
+    // Logic to switch to the NEXT mode
+    if (currentMode == MODE_STOCK) {
+      currentMode = MODE_WEATHER;
+      // Skip Weather if not configured
+      if (systemConfig.weatherKey == "") currentMode = MODE_MESSAGE;
+    } 
+    else if (currentMode == MODE_WEATHER) {
+      currentMode = MODE_MESSAGE;
+    } 
+    else if (currentMode == MODE_MESSAGE) {
+      currentMode = MODE_STOCK;
+    }
+    else if (currentMode == MODE_GIF) {
+      currentMode = MODE_STOCK; // Go back to Stock
+    }
+
+    // Skip Message if empty
+    if (currentMode == MODE_MESSAGE && systemConfig.message == "") {
+      currentMode = MODE_STOCK;
+    }
+
+    // Skip GIF if file doesn't exist
+    if (currentMode == MODE_GIF && !LittleFS.exists("/anim.bin")) {
+      currentMode = MODE_STOCK;
+    }
+
+  }
+
+  display->fillScreen(0);
+  
+  switch(currentMode) {
+    case MODE_STOCK:
+      if (millis() - lastStockFetch > 5000) { 
+        if (systemConfig.stocks.size() > 0) {
+           currentStockIndex = (currentStockIndex + 1) % systemConfig.stocks.size();
+           currentSymbol = systemConfig.stocks[currentStockIndex];
+           fetchYahooData(currentSymbol);
+        }
+        lastStockFetch = millis();
+      }
+      drawStockScreen();
+      break;
+      
+    case MODE_WEATHER:
+      if (millis() - lastWeatherFetch > 300000) fetchWeather();
+      drawWeatherScreen();
+      break;
+
+    case MODE_MESSAGE:
+      drawMessageScreen();
+      break;
+
+      case MODE_GIF:
+      playGif();
+      break;
+  }
+
+  dma->flipDMABuffer();
+  delay(30);
+}
+
+// Helper: Removes -USD, -CAD, etc. from ticker symbols for display
+String getDisplayName(String symbol) {
+  int dashIndex = symbol.indexOf('-');
+  if (dashIndex > 0) {
+    // Returns everything BEFORE the dash (e.g., "BTC-USD" -> "BTC")
+    return symbol.substring(0, dashIndex);
+  }
+  return symbol;
+}
+
+
+// ================================================================
+//                        DRAWING
+// ================================================================
+
+void drawStockScreen() {
+  if (dataCount > 0) drawLineGraph(prices, dataCount);
+
+  // 1. Draw Symbol (CLEANED)
+  // We use the helper here to strip "-USD" just for the screen
+  String displayName = getDisplayName(currentSymbol);
+
+  display->setFont(); // Standard font
+  display->setCursor(0, 0);
+  display->setTextColor(dma->color565(255, 255, 255));
+  display->print(displayName); // Print "BTC" instead of "BTC-USD"
+
+  // 2. Draw Price
+  display->setCursor(0, 8);
+  display->setTextColor(dma->color565(200, 200, 200));
+  display->print(currentPrice);
+
+  // 3. Draw Percentage (Tiny Font)
+  String pctStr = (percentChange > 0 ? "+" : "") + String(percentChange, 1) + "%";
+  int tinyWidth = pctStr.length() * 4; 
+  int xPos = 64 - tinyWidth;
+
+  display->setFont(&PixelItFont); 
+  display->setCursor(xPos, 6);
+
+  if (isStockUp) display->setTextColor(dma->color565(0, 255, 0));
+  else           display->setTextColor(dma->color565(255, 0, 0));
+
+  display->print(pctStr);
+  display->setFont(); // Reset
+}
+
+
+
+void drawWeatherScreen() {
+  // 1. Get Time
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    display->setCursor(0,10);
+    display->setTextColor(dma->color565(255, 0, 0));
+    display->print("No Time");
+    return;
+  }
+
+  // 2. Draw Time (Left Side)
+  char timeStr[6];
+  sprintf(timeStr, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+  
+  display->setFont(); 
+  display->setCursor(2, 6);
+  display->setTextColor(dma->color565(255, 255, 255));
+  display->print(timeStr);
+  
+  // --- DATE CHANGE STARTS HERE ---
+  // Old: sprintf(dateStr, "%02d/%02d", timeinfo.tm_mon + 1, timeinfo.tm_mday);
+  
+  // New: "15 Dec" format
+  const char* monthNames[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+  char dateStr[10];
+  
+  // Format: "15 Dec" (%d = Day, %s = Month String)
+  sprintf(dateStr, "%d %s", timeinfo.tm_mday, monthNames[timeinfo.tm_mon]);
+  
+  display->setFont(&PixelItFont); 
+  display->setCursor(2, 22);
+  display->setTextColor(dma->color565(150, 150, 150)); 
+  display->print(dateStr);
+  display->setFont(); 
+  // --- DATE CHANGE ENDS HERE ---
+
+  // 3. Draw Divider
+  display->drawFastVLine(33, 4, 24, dma->color565(80, 80, 80));
+
+  
+ // 4. Draw Weather Icon
+  const unsigned char* icon = icon_cloud; 
+  uint16_t iconColor = dma->color565(150, 150, 150); 
+
+  // Detect Nighttime (Before 6AM or After 6PM)
+  bool isNight = (timeinfo.tm_hour < 6 || timeinfo.tm_hour >= 18);
+
+  if (weatherId == 800) { 
+    // Clear Sky
+    if (isNight) { icon = icon_moon; iconColor = dma->color565(200, 200, 200); } // Moon (White/Grey)
+    else         { icon = icon_sun;  iconColor = dma->color565(255, 200, 0); }   // Sun (Gold)
+  } 
+  else if (weatherId == 801) {
+    // Few Clouds
+    if (isNight) { icon = icon_moon; iconColor = dma->color565(200, 200, 200); } 
+    else         { icon = icon_cloud; iconColor = dma->color565(180, 180, 180); }
+  }
+  else if (weatherId >= 200 && weatherId < 300) { icon = icon_storm; iconColor = dma->color565(100, 100, 255); } 
+  else if (weatherId >= 300 && weatherId < 600) { icon = icon_rain;  iconColor = dma->color565(0, 150, 255); } 
+  else if (weatherId >= 600 && weatherId < 700) { icon = icon_snow;  iconColor = dma->color565(255, 255, 255); } 
+  else if (weatherId >= 802) { icon = icon_cloud; iconColor = dma->color565(180, 180, 180); } 
+
+  display->drawBitmap(40, 4, icon, 8, 8, iconColor);
+
+  // 5. Draw Temperature
+  display->setCursor(40, 16);
+  display->setTextColor(dma->color565(255, 255, 0)); 
+  display->print(weatherTemp);
+  
+  // Degree Symbol
+  display->drawPixel(53, 16, dma->color565(255, 255, 0));
+  display->drawPixel(54, 16, dma->color565(255, 255, 0));
+  display->drawPixel(53, 17, dma->color565(255, 255, 0));
+  display->drawPixel(54, 17, dma->color565(255, 255, 0));
+}
+
+void drawMessageScreen() {
+  static int msgX = 64;
+  display->setCursor(msgX, 10);
+  display->setTextColor(dma->color565(255, 0, 255)); 
+  display->print(systemConfig.message);
+  msgX--;
+  if (msgX < -(int)(systemConfig.message.length() * 6)) msgX = 64; 
+}
+
+// ================================================================
+//                        DATA FETCHING
+// ================================================================
+
+void fetchYahooData(String symbol) {
+  String range = systemConfig.graphRange;
+  String filename = "/" + symbol + "_" + range + ".json";
+  bool useCache = false;
+
+  // 1. DEFINE FILTER (Crucial for BTC Monthly)
+  // This reduces memory usage by ~90%
+  StaticJsonDocument<200> filter;
+  filter["chart"]["result"][0]["meta"]["chartPreviousClose"] = true;
+  filter["chart"]["result"][0]["indicators"]["quote"][0]["close"] = true;
+
+  // 2. CHECK CACHE
+  if (LittleFS.exists(filename)) {
+    File f = LittleFS.open(filename, "r");
+    time_t now; 
+    time(&now);
+    time_t fileTime = f.getLastWrite();
+    
+    // Check if file is valid and young (< 5 mins)
+    if (f.size() > 0 && fileTime > 1000 && (now - fileTime) < 300) { 
+      
+      // Attempt to parse directly from file
+      DynamicJsonDocument doc(32768);
+      DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+      
+      if (!error) {
+        // SUCCESS: Process the data
+        processJSON(doc, symbol);
+        useCache = true;
+      } else {
+        // FAILURE: Corrupt file found. Delete it immediately!
+        Serial.print("Cache Corrupt: "); Serial.println(error.c_str());
+        f.close();
+        LittleFS.remove(filename); 
+        useCache = false; // Force a new download
+      }
+    } else {
+      // File too old or empty
+      f.close();
+    }
+  }
+
+  // 3. CACHE MISS (Download New Data)
+  if (!useCache) {
+    if (WiFi.status() != WL_CONNECTED) {
+      currentPrice = "No WiFi";
+      return;
+    }
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    client.setTimeout(10000); 
+
+    HTTPClient http;
+    http.setUserAgent("Mozilla/5.0 (ESP32)");
+    
+    // Logic for Crypto vs Stock
+    String interval = "5m";
+    bool isCrypto = symbol.endsWith("-USD");
+    bool useRolling24h = (isCrypto && range == "1d");
+
+    if (useRolling24h) {
+       range = "5d"; 
+       interval = "15m";
+    } else {
+       if (range == "1d")       interval = "5m";
+       else if (range == "1mo") interval = "60m"; 
+       else if (range == "6mo") interval = "1d";
+       else if (range == "1y")  interval = "1d";
+       else { range = "1d"; interval = "5m"; }
+    }
+
+    String url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?interval=" + interval + "&range=" + range + "&includePrePost=true";
+
+    if (http.begin(client, url)) {
+      int httpCode = http.GET();
+      if (httpCode == 200) {
+        
+        // STREAMING DOWNLOAD (Fixes RAM issues)
+        // We write directly from WiFi -> File. No "String payload" buffer needed.
+        File f = LittleFS.open(filename, "w");
+        if (f) {
+           http.writeToStream(&f); // Magic line: Streams data to storage
+           f.close();
+        }
+
+        // Now read it back from the file we just saved
+        f = LittleFS.open(filename, "r");
+        if (f) {
+          DynamicJsonDocument doc(32768);
+          DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
+
+          if (!error) {
+             processJSON(doc, symbol);
+          } else {
+             currentPrice = "JsonErr";
+             Serial.println(error.c_str());
+             f.close();
+             LittleFS.remove(filename); // Delete if we downloaded junk
+          }
+          f.close();
+        }
+      } else {
+        currentPrice = "HTTP " + String(httpCode);
+      }
+      http.end();
+    } else {
+      currentPrice = "Conn Fail";
+    }
+  }
+}
+
+// Helper to process the JSON logic (Shared)
+void processJSON(DynamicJsonDocument& doc, String symbol) {
+  JsonObject result = doc["chart"]["result"][0];
+  JsonObject meta = result["meta"];
+  JsonArray quotes = result["indicators"]["quote"][0]["close"];
+
+  if (!quotes.isNull() && quotes.size() > 0) {
+    std::vector<float> rawData;
+    for (JsonVariant v : quotes) {
+      if (!v.isNull()) rawData.push_back(v.as<float>());
+    }
+
+    // Crypto Rolling 24h Logic
+    bool isCrypto = symbol.endsWith("-USD");
+    bool useRolling24h = (isCrypto && systemConfig.graphRange == "1d");
+    
+    if (useRolling24h && rawData.size() > 96) {
+       std::vector<float> recentData;
+       int start = rawData.size() - 96; 
+       for(int i = start; i < rawData.size(); i++) recentData.push_back(rawData[i]);
+       rawData = recentData;
+    }
+
+    int totalPoints = rawData.size();
+    if (totalPoints > 0) {
+      float lastPrice = rawData[totalPoints - 1];
+      float prevClose = meta["chartPreviousClose"].as<float>();
+      
+      if (useRolling24h) prevClose = rawData[0];
+      else if (prevClose == 0.0) prevClose = rawData[0];
+
+      currentPrice = String(lastPrice, 2);
+      percentChange = (prevClose > 0) ? ((lastPrice - prevClose) / prevClose) * 100.0 : 0.0;
+      isStockUp = (percentChange >= 0);
+
+      // Binning Logic (Fit to 64 pixels)
+      dataCount = 0;
+      if (totalPoints <= 64) {
+        for (float p : rawData) prices[dataCount++] = p;
+      } else {
+        for (int i = 0; i < 64; i++) {
+          int startIdx = (i * totalPoints) / 64;
+          int endIdx   = ((i + 1) * totalPoints) / 64;
+          if (endIdx <= startIdx) endIdx = startIdx + 1;
+          if (endIdx > totalPoints) endIdx = totalPoints;
+
+          float sum = 0; 
+          int count = 0;
+          for (int k = startIdx; k < endIdx; k++) {
+            sum += rawData[k];
+            count++;
+          }
+          if (count > 0) prices[dataCount++] = sum / count;
+        }
+      }
+    }
+  }
+}
+
+
+void fetchWeather() {
+  // Safety Checks
+  if (systemConfig.weatherKey == "") {
+    Serial.println("Weather: No API Key");
+    return;
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Weather: No WiFi");
+    return;
+  }
+
+  HTTPClient http;
+  http.setTimeout(5000); 
+  
+  // --- STEP 1: CLEAN INPUTS ---
+  // Create local copies so we don't mess up the global config
+  String safeCity = systemConfig.city;
+  String safeKey = systemConfig.weatherKey;
+
+  // Remove accidental spaces from start/end
+  safeCity.trim();
+  safeKey.trim();
+
+  // URL Encode the City (Replace spaces with %20 and commas with %2C)
+  // This turns "New York, US" into "New%20York%2C%20US"
+  safeCity.replace(" ", "%20");
+  safeCity.replace(",", "%2C");
+
+  // --- STEP 2: BUILD URL ---
+  String url = "http://api.openweathermap.org/data/2.5/weather?q=" + safeCity + "&appid=" + safeKey + "&units=metric";
+  
+  // DEBUG: Print the URL to Serial (so you can see if it looks wrong)
+  Serial.print("Weather URL: "); 
+  Serial.println(url); 
+  
+  // --- STEP 3: FETCH ---
+  if (http.begin(url)) {
+    int httpCode = http.GET();
+    
+    if (httpCode == 200) {
+      String payload = http.getString();
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, payload);
+
+      if (!error) {
+        float temp = doc["main"]["temp"];
+        weatherTemp = String(temp, 0); 
+        
+        String main = doc["weather"][0]["main"];
+        weatherDesc = main;
+        
+        weatherId = doc["weather"][0]["id"];
+        
+        Serial.print("Weather Success! Temp: "); Serial.println(weatherTemp);
+      } else {
+        Serial.print("Weather JSON Error: "); Serial.println(error.c_str());
+      }
+    } else {
+      Serial.print("Weather HTTP Error: "); Serial.println(httpCode);
+      // Print the server's error message (often explains WHY it failed)
+      Serial.println(http.getString()); 
+    }
+    http.end();
+  } else {
+    Serial.println("Weather Connection Failed");
+  }
+  
+  // Timer Logic
+  if (weatherTemp != "--") {
+    lastWeatherFetch = millis();
+  } else {
+    // Retry sooner (30 seconds) if failed
+    lastWeatherFetch = millis() - (10000 - 30000); 
+  }
+}
+
+void drawLineGraph(float *data, int count) {
+  if (count < 2) return;
+  uint16_t color = isStockUp ? dma->color565(0, 255, 0) : dma->color565(255, 0, 0);
+  uint16_t fadeColor = isStockUp ? dma->color565(0, 40, 0) : dma->color565(40, 0, 0);
+  float minVal = 99999;
+  float maxVal = -99999;
+  for (int i = 0; i < count; i++) {
+    if (data[i] < minVal) minVal = data[i];
+    if (data[i] > maxVal) maxVal = data[i];
+  }
+  if (maxVal == minVal) maxVal = minVal + 1; 
+  int oldX = 0;
+  int oldY = mapFloat(data[0], minVal, maxVal, 31, 17); 
+  for (int i = 0; i < count; i++) {
+    int x = map(i, 0, count - 1, 0, 63);
+    int y = mapFloat(data[i], minVal, maxVal, 31, 17); 
+    display->drawFastVLine(x, y, 32 - y, fadeColor);
+    if (i > 0) display->drawLine(oldX, oldY, x, y, color);
+    oldX = x; oldY = y;
+  }
+}
+
+long mapFloat(float x, float in_min, float in_max, long out_min, long out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void saveConfig() {
+  DynamicJsonDocument doc(1024);
+  doc["ssid"] = systemConfig.ssid;
+  doc["pass"] = systemConfig.pass;
+  JsonArray arr = doc.createNestedArray("stocks");
+  for(String s : systemConfig.stocks) arr.add(s);
+  doc["weatherKey"] = systemConfig.weatherKey;
+  doc["city"] = systemConfig.city;
+  doc["message"] = systemConfig.message;
+  doc["tz"] = systemConfig.timezoneOffset;
+  doc["range"] = systemConfig.graphRange; // Save Range
+  File file = LittleFS.open("/config.json", "w");
+  serializeJson(doc, file);
+  file.close();
+}
+
+void loadConfig() {
+  if (LittleFS.exists("/config.json")) {
+    File file = LittleFS.open("/config.json", "r");
+    DynamicJsonDocument doc(1024);
+    deserializeJson(doc, file);
+    file.close();
+    systemConfig.ssid = doc["ssid"].as<String>();
+    systemConfig.pass = doc["pass"].as<String>();
+    JsonArray arr = doc["stocks"];
+    systemConfig.stocks.clear();
+    for(String s : arr) systemConfig.stocks.push_back(s);
+    systemConfig.weatherKey = doc["weatherKey"] | "";
+    systemConfig.city = doc["city"] | "New York,US";
+    systemConfig.message = doc["message"] | "";
+    systemConfig.timezoneOffset = doc["tz"] | -5; 
+    systemConfig.graphRange = doc["range"] | "1d"; // Load Range
+  }
+}
+
+void setupWiFi() {
+  if(systemConfig.ssid == "" || systemConfig.ssid == "null") {
+    isAPMode = true;
+  } else {
+    display->setFont(&PixelItFont);
+    display->fillScreen(0);
+    display->setCursor(0,6);
+    display->print("Connecting WiFi...");
+    dma->flipDMABuffer();
+    WiFi.begin(systemConfig.ssid.c_str(), systemConfig.pass.c_str());
+    int retries = 0;
+    while(WiFi.status() != WL_CONNECTED && retries < 20) { delay(500); retries++; }
+    if(WiFi.status() == WL_CONNECTED) {
+      isAPMode = false;
+      display->fillScreen(0); display->setCursor(1,13); display->print("IP:"); display->setCursor(14,13); display->print(WiFi.localIP());
+      dma->flipDMABuffer(); delay(3000);
+      
+    } else { isAPMode = true; }
+    display->setFont();
+  }
+  getSerial();
+  if (isAPMode) WiFi.softAP(serialDigits, "12345678");
+}
