@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#050505">
+
+  <title>Live InfoMatrix Demo | Real-Time LED Ticker Preview</title>
+  <meta name="description" content="Watch a live InfoMatrix LED ticker streaming real-time output from an actual device. Preview stocks, sports, weather, animations and custom content.">
+
+  <link rel="canonical" href="https://www.infomatrix3d.com/demo.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Live InfoMatrix LED Ticker Demo">
+  <meta property="og:description" content="Watch a real InfoMatrix device stream its LED display output live.">
+  <meta property="og:url" content="https://www.infomatrix3d.com/demo.html">
+  <meta property="og:image" content="https://www.infomatrix3d.com/matrix-nba.jpg">
+
+  <style>
+    :root {
+      --primary: #00d1b2;
+      --primary-dark: #00ad94;
+      --background: #050505;
+      --surface: #111111;
+      --surface-light: #171717;
+      --text: #f8fafc;
+      --muted: #a7b2c3;
+      --border: #2d3748;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --max-width: 1080px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      color-scheme: dark;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 0%, #102621 0%, transparent 34%),
+        var(--background);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--primary);
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid #ffffff;
+      outline-offset: 3px;
+    }
+
+    .container {
+      width: min(calc(100% - 32px), var(--max-width));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      padding: 22px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      color: var(--text);
+      font-size: 1.15rem;
+      font-weight: 850;
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .back-link {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    main {
+      padding: 70px 0 80px;
+    }
+
+    .hero {
+      max-width: 800px;
+      margin: 0 auto 36px;
+      text-align: center;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 7px 14px;
+      color: var(--primary);
+      background: rgba(0, 209, 178, 0.12);
+      border: 1px solid rgba(0, 209, 178, 0.3);
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 9px;
+      height: 9px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--success);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.8); }
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2.25rem, 6vw, 4rem);
+      line-height: 1.08;
+      letter-spacing: -0.05em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.5vw, 1.22rem);
+    }
+
+    .demo-card {
+      padding: clamp(18px, 4vw, 36px);
+      background: rgba(17, 17, 17, 0.94);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      background: var(--warning);
+      border-radius: 50%;
+    }
+
+    .status-indicator.connected {
+      background: var(--success);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+    }
+
+    .status-indicator.error {
+      background: var(--danger);
+    }
+
+    .last-updated {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .matrix-shell {
+      position: relative;
+      display: grid;
+      min-height: 260px;
+      place-items: center;
+      overflow: hidden;
+      padding: clamp(14px, 3vw, 28px);
+      background: #000000;
+      border: 1px solid #3a3a3a;
+      border-radius: 16px;
+      box-shadow:
+        inset 0 0 35px rgba(0, 0, 0, 0.9),
+        0 24px 55px rgba(0, 0, 0, 0.55);
+    }
+
+    #publicMatrixCanvas {
+      display: block;
+      width: 100%;
+      max-width: 960px;
+      height: auto;
+      background: #000000;
+      image-rendering: auto;
+    }
+
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 30px;
+      color: var(--muted);
+      text-align: center;
+      background: #000000;
+    }
+
+    .placeholder.hidden {
+      display: none;
+    }
+
+    .placeholder strong {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--text);
+      font-size: 1.06rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 22px;
+      cursor: pointer;
+      color: #001b17;
+      background: var(--primary);
+      border: 1px solid var(--primary);
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 850;
+      text-decoration: none;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .button:hover {
+      background: #34e0c6;
+      transform: translateY(-2px);
+    }
+
+    .button.secondary {
+      color: var(--text);
+      background: transparent;
+      border-color: var(--border);
+    }
+
+    .button.secondary:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .note {
+      max-width: 780px;
+      margin: 30px auto 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 28px;
+    }
+
+    .feature {
+      padding: 21px;
+      background: var(--surface-light);
+      border: 1px solid #252525;
+      border-radius: 14px;
+    }
+
+    .feature h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    footer {
+      padding: 30px 0;
+      color: var(--muted);
+      text-align: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 760px) {
+      main { padding-top: 48px; }
+      .status-row { align-items: flex-start; flex-direction: column; gap: 7px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .matrix-shell { min-height: 180px; }
+      .button { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="https://www.infomatrix3d.com/">InfoMatrix 3D</a>
+      <a class="back-link" href="https://www.infomatrix3d.com/">Return to product page</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="live-badge">
+        <span class="live-dot" aria-hidden="true"></span>
+        Live hardware demo
+      </div>
+
+      <h1>Watch a Real InfoMatrix Device Live</h1>
+
+      <p>
+        This preview streams LED frame data from a real InfoMatrix device running
+        production firmware. The display may rotate through market data, sports
+        scores, weather, messages, animations and custom content.
+      </p>
+    </section>
+
+    <section class="demo-card" aria-labelledby="preview-heading">
+      <div class="status-row">
+        <div class="status" role="status" aria-live="polite">
+          <span id="statusIndicator" class="status-indicator" aria-hidden="true"></span>
+          <span id="connectionStatus">Connecting to the live device...</span>
+        </div>
+
+        <div id="lastUpdated" class="last-updated">Waiting for first frame</div>
+      </div>
+
+      <h2 id="preview-heading" hidden>Live LED matrix preview</h2>
+
+      <div class="matrix-shell">
+        <canvas
+          id="publicMatrixCanvas"
+          width="640"
+          height="320"
+          aria-label="Live rendering of the InfoMatrix LED display"
+        ></canvas>
+
+        <div id="placeholder" class="placeholder">
+          <div>
+            <strong>Connecting to InfoMatrix</strong>
+            The live device may take a few seconds to respond.
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="pauseButton" class="button" type="button">Pause Preview</button>
+        <button id="reconnectButton" class="button secondary" type="button">Reconnect</button>
+        <a class="button secondary" href="https://www.infomatrix3d.com/" target="_top">View InfoMatrix</a>
+      </div>
+
+      <p class="note">
+        This is a read-only visual preview. Display timing depends on the device,
+        home connection and Cloudflare Tunnel availability. No dashboard controls
+        or device settings are exposed by this page.
+      </p>
+    </section>
+
+    <section class="feature-grid" aria-label="Demo information">
+      <article class="feature">
+        <h2>Real Hardware</h2>
+        <p>The frames shown here come from a physical InfoMatrix device rather than a simulated animation.</p>
+      </article>
+
+      <article class="feature">
+        <h2>Production Firmware</h2>
+        <p>The device runs the same firmware and display modes available on the InfoMatrix product.</p>
+      </article>
+
+      <article class="feature">
+        <h2>Secure Read-Only Preview</h2>
+        <p>Visitors can see the display output without receiving access to Wi-Fi, reboot or configuration controls.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      &copy; 2026 InfoMatrix 3D. Live preview streamed from an InfoMatrix device.
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      const FRAME_URL = "https://demo.infomatrix3d.com/api/frame";
+      const FRAME_INTERVAL_MS = 1000;
+      const BACKGROUND_INTERVAL_MS = 10000;
+      const REQUEST_TIMEOUT_MS = 8000;
+      const PIXEL_PITCH = 10;
+      const PIXEL_RADIUS = 3.5;
+
+      const canvas = document.getElementById("publicMatrixCanvas");
+      const context = canvas.getContext("2d");
+      const placeholder = document.getElementById("placeholder");
+      const statusIndicator = document.getElementById("statusIndicator");
+      const connectionStatus = document.getElementById("connectionStatus");
+      const lastUpdated = document.getElementById("lastUpdated");
+      const pauseButton = document.getElementById("pauseButton");
+      const reconnectButton = document.getElementById("reconnectButton");
+
+      let previewRunning = true;
+      let requestInProgress = false;
+      let nextFrameTimer = null;
+      let consecutiveFailures = 0;
+
+      function setStatus(state, message) {
+        statusIndicator.className = "status-indicator";
+
+        if (state === "connected") {
+          statusIndicator.classList.add("connected");
+        } else if (state === "error") {
+          statusIndicator.classList.add("error");
+        }
+
+        connectionStatus.textContent = message;
+      }
+
+      function scheduleNextFrame(delay) {
+        window.clearTimeout(nextFrameTimer);
+
+        if (!previewRunning) {
+          return;
+        }
+
+        nextFrameTimer = window.setTimeout(fetchLiveFrame, delay);
+      }
+
+      function getRefreshInterval() {
+        return document.hidden
+          ? BACKGROUND_INTERVAL_MS
+          : FRAME_INTERVAL_MS;
+      }
+
+      function renderPixels(pixels, columns, rows) {
+        const expectedPixelCount = columns * rows;
+
+        if (pixels.length < expectedPixelCount) {
+          throw new Error("The frame payload is smaller than the reported display size.");
+        }
+
+        const targetWidth = columns * PIXEL_PITCH;
+        const targetHeight = rows * PIXEL_PITCH;
+
+        if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+        }
+
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let y = 0; y < rows; y += 1) {
+          for (let x = 0; x < columns; x += 1) {
+            const rgb565 = pixels[y * columns + x];
+            const red = Math.round(((rgb565 >> 11) & 0x1f) * 255 / 31);
+            const green = Math.round(((rgb565 >> 5) & 0x3f) * 255 / 63);
+            const blue = Math.round((rgb565 & 0x1f) * 255 / 31);
+            const centerX = x * PIXEL_PITCH + PIXEL_PITCH / 2;
+            const centerY = y * PIXEL_PITCH + PIXEL_PITCH / 2;
+            const colour = `rgb(${red}, ${green}, ${blue})`;
+
+            context.beginPath();
+            context.arc(centerX, centerY, PIXEL_RADIUS, 0, Math.PI * 2);
+            context.fillStyle = colour;
+
+            if (rgb565 !== 0) {
+              context.shadowColor = colour;
+              context.shadowBlur = 4;
+            } else {
+              context.shadowBlur = 0;
+            }
+
+            context.fill();
+          }
+        }
+
+        context.shadowBlur = 0;
+      }
+
+      async function fetchLiveFrame() {
+        if (!previewRunning || requestInProgress) {
+          return;
+        }
+
+        requestInProgress = true;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+        try {
+          const response = await fetch(FRAME_URL, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-store",
+            credentials: "omit",
+            signal: controller.signal
+          });
+
+          if (!response.ok) {
+            throw new Error(`Frame request returned HTTP ${response.status}.`);
+          }
+
+          const columns = Number.parseInt(response.headers.get("X-Width"), 10) || 64;
+          const rows = Number.parseInt(response.headers.get("X-Height"), 10) || 32;
+          const buffer = await response.arrayBuffer();
+
+          if (buffer.byteLength % 2 !== 0) {
+            throw new Error("The frame payload has an invalid byte length.");
+          }
+
+          const pixels = new Uint16Array(buffer);
+          renderPixels(pixels, columns, rows);
+
+          consecutiveFailures = 0;
+          placeholder.classList.add("hidden");
+          setStatus("connected", `Live device connected · ${columns} × ${rows} pixels`);
+          lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        } catch (error) {
+          consecutiveFailures += 1;
+          const isTimeout = error.name === "AbortError";
+
+          setStatus(
+            "error",
+            isTimeout
+              ? "The live device did not respond in time"
+              : "Live preview is temporarily unavailable"
+          );
+
+          lastUpdated.textContent = "Retrying automatically";
+          placeholder.classList.remove("hidden");
+          placeholder.innerHTML = `
+            <div>
+              <strong>Live preview unavailable</strong>
+              The device may be offline or restarting. We will keep trying automatically.
+            </div>
+          `;
+
+          console.error("InfoMatrix live preview error:", error);
+        } finally {
+          window.clearTimeout(timeout);
+          requestInProgress = false;
+
+          const retryDelay = consecutiveFailures > 0
+            ? Math.min(30000, 3000 * consecutiveFailures)
+            : getRefreshInterval();
+
+          scheduleNextFrame(retryDelay);
+        }
+      }
+
+      function pausePreview() {
+        previewRunning = false;
+        window.clearTimeout(nextFrameTimer);
+        pauseButton.textContent = "Resume Preview";
+        setStatus("paused", "Live preview paused");
+      }
+
+      function resumePreview() {
+        previewRunning = true;
+        consecutiveFailures = 0;
+        pauseButton.textContent = "Pause Preview";
+        setStatus("connecting", "Connecting to the live device...");
+        fetchLiveFrame();
+      }
+
+      pauseButton.addEventListener("click", () => {
+        if (previewRunning) {
+          pausePreview();
+        } else {
+          resumePreview();
+        }
+      });
+
+      reconnectButton.addEventListener("click", () => {
+        previewRunning = true;
+        consecutiveFailures = 0;
+        pauseButton.textContent = "Pause Preview";
+        window.clearTimeout(nextFrameTimer);
+        setStatus("connecting", "Reconnecting to the live device...");
+        fetchLiveFrame();
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (previewRunning && !requestInProgress) {
+          scheduleNextFrame(document.hidden ? BACKGROUND_INTERVAL_MS : 100);
+        }
+      });
+
+      fetchLiveFrame();
+    })();
+  </script>
+</body>
+</html>
