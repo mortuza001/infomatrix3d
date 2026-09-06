@@ -1,973 +1,718 @@
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
-#include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
-#include <Adafruit_GFX.h>
-#include <LittleFS.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <vector>
-#include <time.h> 
-#include "PixelItFont.h"
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-#include <Crypto.h>
-#include <Ed25519.h>
+  <title>Wi-Fi Stock, Sports & Information Display | InfoMatrix 3D</title>
+  <meta name="description" content="InfoMatrix 3D is a customizable Wi-Fi information display for stocks, crypto, forex, sports scores, weather, commute times, RSS, MQTT, GIFs and custom apps, with no monthly subscription.">
+  <meta name="keywords" content="best stock ticker display, sports ticker display, live stock ticker, LED stock ticker, crypto ticker display, desktop ticker, NBA score display, NFL ticker">
+  <meta name="author" content="InfoMatrix 3D">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="theme-color" content="#050505">
 
-#include "esp_mac.h"
+  <link rel="canonical" href="https://www.infomatrix3d.com/">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://www.youtube-nocookie.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-// --- WEATHER ICONS (8x8 Bitmaps) ---
-const unsigned char icon_sun[] PROGMEM = {
-  0x24, 0x00, 0xbd, 0x7e, 0x7e, 0xbd, 0x00, 0x24
-};
-const unsigned char icon_cloud[] PROGMEM = {
-  0x00, 0x00, 0x0e, 0x3b, 0x71, 0x7f, 0x1e, 0x00
-};
-const unsigned char icon_rain[] PROGMEM = {
-  0x00, 0x1c, 0x3e, 0x7f, 0x7f, 0x22, 0x14, 0x08
-};
-const unsigned char icon_snow[] PROGMEM = {
-  0x00, 0x5a, 0x24, 0x5a, 0x24, 0x5a, 0x00, 0x00
-};
-const unsigned char icon_storm[] PROGMEM = {
-  0x0c, 0x1e, 0x33, 0x33, 0x1e, 0x0c, 0x06, 0x03
-};
-const unsigned char icon_moon[] PROGMEM = {
-  0x1c, 0x3e, 0x7e, 0x70, 0x70, 0x7e, 0x3e, 0x1c 
-};
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="InfoMatrix 3D">
+  <meta property="og:locale" content="en_CA">
+  <meta property="og:title" content="Wi-Fi Stock, Sports & Information Display | InfoMatrix 3D">
+  <meta property="og:description" content="Track stocks, crypto, forex, sports, weather, commute times, RSS feeds and smart-home notifications on one customizable Wi-Fi display.">
+  <meta property="og:image" content="https://www.infomatrix3d.com/matrix-nba.jpg">
+  <meta property="og:image:alt" content="InfoMatrix 3D displaying live NBA scores on a desktop LED ticker">
+  <meta property="og:url" content="https://www.infomatrix3d.com/">
 
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Wi-Fi Stock, Sports & Information Display | InfoMatrix 3D">
+  <meta name="twitter:description" content="Stocks, sports, weather, commute data, RSS, MQTT and custom apps on your desk, with no monthly subscription.">
+  <meta name="twitter:image" content="https://www.infomatrix3d.com/matrix-nba.jpg">
+  <meta name="twitter:image:alt" content="InfoMatrix 3D stock and sports ticker display">
 
-// --- HARDWARE CONFIG ---
-#define PANEL_RES_X  128
-#define PANEL_RES_Y  16
-#define PANEL_CHAIN  1
-
-// --- VIRTUAL PANEL WRAPPER ---
-class VirtualPanel : public Adafruit_GFX {
-  public:
-    MatrixPanel_I2S_DMA *dma;
-    VirtualPanel(MatrixPanel_I2S_DMA *_dma) : Adafruit_GFX(64, 32), dma(_dma) {}
-    void drawPixel(int16_t x, int16_t y, uint16_t color) override {
-      if (x < 0 || x >= 64 || y < 0 || y >= 32) return;
-      int strip = y / 8; 
-      int16_t ly = (y % 8) + ((strip >= 2) ? 8 : 0);
-      bool isEvenStrip = (strip % 2 == 0);
-      int16_t lx = x + (isEvenStrip ? 64 : 0);
-      dma->drawPixel(lx, ly, color);
-    }
-    void fillScreen(uint16_t color) { dma->fillScreen(color); }
-};
-
-MatrixPanel_I2S_DMA* dma = nullptr;
-VirtualPanel* display = nullptr;
-AsyncWebServer server(80);
-
-// --- GLOBAL CONFIGURATION ---
-struct Config {
-  String ssid;
-  String pass;
-  std::vector<String> stocks;
-  String weatherKey;  
-  String city;        
-  String message;     
-  int timezoneOffset;
-  String graphRange; // NEW: Stores "1d", "1mo", "6mo", "1y"
-};
-Config systemConfig;
-
-const int DURATION_GIF = 30000; // Play GIF for 30 seconds before switching
-
-// GIF State Variables
-File gifFile;
-bool isGifOpen = false;
-unsigned long lastGifFrame = 0;
-int gifDelay = 100;
-int gifFrames = 0;
-int gifWidth = 0;
-int gifHeight = 0;
-int currentFrame = 0;
-
-
-// --- TIMING CONFIGURATION (in milliseconds) ---
-const int DURATION_STOCK   = 60000;  // Stay on Stocks for 60 seconds
-const int DURATION_WEATHER = 10000;  // Stay on Weather for 10 seconds
-const int DURATION_MSG     = 15000;  // Stay on Message for 15 seconds
-
-
-// Thread Flags
-bool configNeedsUpdate = false;
-bool wifiNeedsSave = false;
-String pendingSSID = "";
-String pendingPass = "";
-bool isAPMode = false;
-
-// State Machine
-enum Mode { MODE_STOCK, MODE_WEATHER, MODE_MESSAGE, MODE_GIF };
-
-
-Mode currentMode = MODE_STOCK;
-unsigned long lastModeSwitch = 0;
-const int MODE_DURATION = 10000; 
-
-// Data Variables
-int currentStockIndex = 0;
-float prices[64];
-int dataCount = 0;
-String currentSymbol = "";
-String currentPrice = "Booting...";
-float percentChange = 0.0;
-bool isStockUp = true;
-unsigned long lastStockFetch = 0;
-
-String weatherTemp = "--";
-String weatherDesc = "";
-int weatherId = 800;
-unsigned long lastWeatherFetch = 0;
-
-// --- PROTOTYPES ---
-void loadConfig(); 
-void saveConfig(); 
-void setupWiFi();
-void fetchYahooData(String symbol);
-void fetchWeather();
-void drawLineGraph(float *data, int count);
-void drawStockScreen();
-void drawWeatherScreen();
-void drawMessageScreen();
-long mapFloat(float x, float in_min, float in_max, long out_min, long out_max);
-
-String vers = "1.1.a";
-
-String serialDigits = "";
-
-//////////////// Licensing ///////////////
-
-void getSerial(){
-  uint8_t baseMac[6];
-  esp_read_mac(baseMac, ESP_MAC_WIFI_STA);
-  char macSuffixBuffer[9]; 
-
-  snprintf(macSuffixBuffer, sizeof(macSuffixBuffer), "%02X%02X%02X%02X", 
-           baseMac[2], baseMac[3], baseMac[4], baseMac[5]);
-
-  serialDigits = String(macSuffixBuffer);
-
-}
-
-
-/// GIF animation
-
-void playGif() {
-  // 1. Open File Logic
-  if (!isGifOpen) {
-    if (LittleFS.exists("/anim.bin")) {
-      gifFile = LittleFS.open("/anim.bin", "r");
-      
-      if (gifFile.size() > 4) {
-        gifWidth  = gifFile.read();
-        gifHeight = gifFile.read();
-        gifFrames = gifFile.read();
-        gifFile.read(); // Reserved
-        
-        // Debug to Serial
-        Serial.printf("GIF: %dx%d, %d frames\n", gifWidth, gifHeight, gifFrames);
-
-        isGifOpen = true;
-        currentFrame = 0;
-        lastGifFrame = 0;
-
-        // SIZE CHECK
-        if (gifWidth != 64 || gifHeight != 32) {
-          display->fillScreen(0);
-          display->setCursor(0, 0);
-          display->setTextColor(dma->color565(255, 0, 0));
-          display->print("Size Err");
-          display->setCursor(0, 10);
-          display->print(gifWidth); display->print("x"); display->print(gifHeight);
-          gifFile.close();
-          isGifOpen = false;
-          return;
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.infomatrix3d.com/#organization",
+        "name": "InfoMatrix 3D",
+        "url": "https://www.infomatrix3d.com/"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.infomatrix3d.com/#website",
+        "url": "https://www.infomatrix3d.com/",
+        "name": "InfoMatrix 3D",
+        "publisher": { "@id": "https://www.infomatrix3d.com/#organization" },
+        "inLanguage": "en-CA"
+      },
+      {
+        "@type": "Product",
+        "@id": "https://www.infomatrix3d.com/#product",
+        "name": "InfoMatrix 3D Wi-Fi Information Display",
+        "description": "A customizable Wi-Fi desktop information display for stocks, crypto, forex, commodities, sports scores, weather, commute times, RSS feeds, MQTT notifications, animations and custom apps without a monthly subscription.",
+        "image": [
+          "https://www.infomatrix3d.com/image-1.jpg",
+          "https://www.infomatrix3d.com/matrix-nba.jpg",
+          "https://www.infomatrix3d.com/matrix-epl.jpg"
+        ],
+        "brand": {
+          "@type": "Brand",
+          "name": "InfoMatrix 3D"
+        },
+        "category": "Desktop LED ticker display",
+        "url": "https://www.infomatrix3d.com/",
+        "offers": {
+          "@type": "Offer",
+          "url": "https://www.etsy.com/ca/listing/4428438419/stock-crypto-sports-live-ticker-text?etsrc=sdt",
+          "availability": "https://schema.org/InStock"
         }
-      } else {
-        // FILE EMPTY
-        display->fillScreen(0);
-        display->setCursor(0, 8);
-        display->setTextColor(dma->color565(255, 0, 0));
-        display->print("File Empty");
-        gifFile.close();
-        return;
-      }
-    } else {
-      // NO FILE FOUND
-      display->fillScreen(0);
-      display->setCursor(0, 8);
-      display->setTextColor(dma->color565(255, 0, 0));
-      display->print("No GIF File");
-      return;
-    }
-  }
-
-  // 2. Playback Logic
-  if (isGifOpen && (millis() - lastGifFrame > gifDelay)) {
-    
-    // Read Delay (2 bytes)
-    uint8_t d1 = gifFile.read();
-    uint8_t d2 = gifFile.read();
-    gifDelay = d1 | (d2 << 8);
-    if (gifDelay < 20) gifDelay = 20;
-
-    // Allocate Memory for 1 Frame (4096 bytes)
-    size_t frameSize = 64 * 32 * 2;
-    uint8_t* buffer = (uint8_t*)malloc(frameSize);
-    
-    if (buffer) {
-      // Read & Draw
-      if (gifFile.read(buffer, frameSize) == frameSize) {
-        dma->drawRGBBitmap(0, 0, (uint16_t*)buffer, 64, 32);
-      }
-      free(buffer);
-    } else {
-      // RAM ERROR
-      display->setCursor(0,0);
-      display->setTextColor(dma->color565(255, 0, 0));
-      display->print("RAM ERR");
-    }
-
-    lastGifFrame = millis();
-    currentFrame++;
-
-    // Loop
-    if (currentFrame >= gifFrames) {
-      gifFile.seek(4); // Skip header to restart
-      currentFrame = 0;
-    }
-  }
-}
-
-
-// ================================================================
-//                           SETUP
-// ================================================================
-void setup() {
-  Serial.begin(115200);
-
-  // 1. Hardware Init
-  HUB75_I2S_CFG cfg(PANEL_RES_X, PANEL_RES_Y, PANEL_CHAIN);
-  cfg.double_buff = true; 
-  cfg.clkphase = false;
-  dma = new MatrixPanel_I2S_DMA(cfg);
-  dma->begin();
-  dma->setBrightness8(60); 
-  display = new VirtualPanel(dma);
-  display->setTextWrap(false);
-  
-  // 2. Filesystem
-  if(!LittleFS.begin(true)){ Serial.println("LittleFS Failed"); }
-  loadConfig(); 
-
-  // 3. Network
-  setupWiFi();
-
-  // 4. Time
-  if(!isAPMode) {
-    configTime(systemConfig.timezoneOffset * 3600, 0, "pool.ntp.org", "time.nist.gov");
-    fetchWeather(); 
-  }
-
-  // 5. WEB ROUTES
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    String file = isAPMode ? "/wifi.html" : "/index.html";
-    if (LittleFS.exists(file)) {
-      request->send(LittleFS, file, "text/html");
-    } else {
-      request->send(200, "text/plain", isAPMode ? "Upload wifi.html" : "Upload index.html");
-    }
-  });
-
-  server.serveStatic("/", LittleFS, "/");
-
-  server.on("/savewifi", HTTP_GET, [](AsyncWebServerRequest *request){
-    if (request->hasParam("ssid") && request->hasParam("pass")) {
-      systemConfig.ssid = request->getParam("ssid")->value();
-      systemConfig.pass = request->getParam("pass")->value();
-      wifiNeedsSave = true;
-      request->send(200, "text/html", "Saved! Device restarting...");
-    } else {
-      request->send(400, "text/plain", "Missing Parameters");
-    }
-  });
-
-  server.on("/api/save", HTTP_POST, [](AsyncWebServerRequest *request){
-      if(request->hasParam("stocks", true)) {
-        String s = request->getParam("stocks", true)->value();
-        systemConfig.stocks.clear();
-        int r = 0; 
-        for (int i = 0; i < s.length(); i++) {
-            if (s.charAt(i) == ',') {
-                String token = s.substring(r, i);
-                token.trim(); token.toUpperCase();
-                if(token.length()>0) systemConfig.stocks.push_back(token);
-                r = i + 1;
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://www.infomatrix3d.com/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What can InfoMatrix 3D display?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "InfoMatrix 3D can display live stock prices, cryptocurrency data and charts, NBA, NFL, NHL and EPL scores, weather, transit information, scrolling text, time and Pomodoro timers."
             }
-        }
-        String token = s.substring(r);
-        token.trim(); token.toUpperCase();
-        if(token.length()>0) systemConfig.stocks.push_back(token);
-      }
-      if(request->hasParam("weatherKey", true)) systemConfig.weatherKey = request->getParam("weatherKey", true)->value();
-      if(request->hasParam("city", true)) systemConfig.city = request->getParam("city", true)->value();
-      if(request->hasParam("message", true)) systemConfig.message = request->getParam("message", true)->value();
-      if(request->hasParam("tz", true)) systemConfig.timezoneOffset = request->getParam("tz", true)->value().toInt();
-      
-      // NEW: Save Range
-      if(request->hasParam("range", true)) systemConfig.graphRange = request->getParam("range", true)->value();
-
-      saveConfig();
-      configTime(systemConfig.timezoneOffset * 3600, 0, "pool.ntp.org");
-      request->send(200, "text/plain", "Saved");
-      currentMode = MODE_STOCK; 
-  });
-
-  // Add this API endpoint to delete the GIF file
-  server.on("/api/delete_gif", HTTP_POST, [](AsyncWebServerRequest *request){
-    if (LittleFS.exists("/anim.bin")) {
-      LittleFS.remove("/anim.bin");
-      // Force close file if it's currently playing
-      if (isGifOpen) {
-        gifFile.close();
-        isGifOpen = false;
-      }
-      request->send(200, "text/plain", "Deleted");
-    } else {
-      request->send(404, "text/plain", "File not found");
-    }
-  });
-
-
-  server.on("/api/data", HTTP_GET, [](AsyncWebServerRequest *request){
-      DynamicJsonDocument doc(2048);
-      JsonArray arr = doc.createNestedArray("stocks");
-      for(String s : systemConfig.stocks) arr.add(s);
-      doc["weatherKey"] = systemConfig.weatherKey;
-      doc["city"] = systemConfig.city;
-      doc["message"] = systemConfig.message;
-      doc["tz"] = systemConfig.timezoneOffset;
-      doc["range"] = systemConfig.graphRange; // NEW: Send current range to UI
-      String json;
-      serializeJson(doc, json);
-      request->send(200, "application/json", json);
-  });
-
-// --- UPLOAD HANDLER (FIX) ---
-  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/plain", "Upload OK");
-  }, [](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-    // 1. Open File on First Chunk
-    if (!index) {
-      Serial.printf("Upload Start: %s\n", filename.c_str());
-      // Force filename to /anim.bin if it comes from the GIF tool
-      if (filename == "anim.bin") {
-         if (LittleFS.exists("/anim.bin")) LittleFS.remove("/anim.bin");
-         request->_tempFile = LittleFS.open("/anim.bin", "w");
-      }
-    }
-    // 2. Write Data
-    if (request->_tempFile) {
-      request->_tempFile.write(data, len);
-    }
-    // 3. Close on Final Chunk
-    if (final) {
-      if (request->_tempFile) {
-        request->_tempFile.close();
-        Serial.printf("Upload Complete: %u bytes\n", index + len);
-      }
-    }
-  });
-
-
-  server.onNotFound([](AsyncWebServerRequest *request) {
-    if (isAPMode) request->redirect("/");
-    else request->send(404, "text/plain", "Not Found");
-  });
-
-  server.begin();
-  
-  if(!isAPMode && systemConfig.stocks.size() > 0) {
-    currentSymbol = systemConfig.stocks[0];
-    fetchYahooData(currentSymbol);
-  }
-}
-
-// ================================================================
-//                           LOOP
-// ================================================================
-void loop() {
-  if (wifiNeedsSave) {
-    saveConfig();
-    delay(2000);
-    ESP.restart();
-  }
-
-  if (isAPMode) {
-    
-     display->setFont(&PixelItFont);
-     display->fillScreen(0);
-     display->setCursor(0,5);
-     display->setTextColor(dma->color565(255, 255, 0));
-     display->print("SETUP MODE");
-     display->setCursor(0, 13);
-     display->setTextColor(dma->color565(0, 255, 255));
-     display->print("WiFi: ");
-     display->setCursor(18, 13);
-     getSerial();
-     display->print(serialDigits);
-     display->setCursor(0, 20);
-     display->print("Pass: 12345678");
-     display->setCursor(0, 27);
-     display->print("IP: 192.168.4.1");
-     dma->flipDMABuffer();
-     delay(100);
-     return;
-  }
-
- // Determine how long the CURRENT mode should last
-  unsigned long currentLimit = DURATION_STOCK; 
-  if (currentMode == MODE_WEATHER) currentLimit = DURATION_WEATHER;
-  if (currentMode == MODE_MESSAGE) currentLimit = DURATION_MSG;
-  if (currentMode == MODE_GIF) currentLimit = DURATION_GIF;
-
-  // Check if it is time to switch modes
-  if (millis() - lastModeSwitch > currentLimit) {
-    lastModeSwitch = millis();
-
-    // Logic to switch to the NEXT mode
-    if (currentMode == MODE_STOCK) {
-      currentMode = MODE_WEATHER;
-      // Skip Weather if not configured
-      if (systemConfig.weatherKey == "") currentMode = MODE_MESSAGE;
-    } 
-    else if (currentMode == MODE_WEATHER) {
-      currentMode = MODE_MESSAGE;
-    } 
-    else if (currentMode == MODE_MESSAGE) {
-      currentMode = MODE_STOCK;
-    }
-    else if (currentMode == MODE_GIF) {
-      currentMode = MODE_STOCK; // Go back to Stock
-    }
-
-    // Skip Message if empty
-    if (currentMode == MODE_MESSAGE && systemConfig.message == "") {
-      currentMode = MODE_STOCK;
-    }
-
-    // Skip GIF if file doesn't exist
-    if (currentMode == MODE_GIF && !LittleFS.exists("/anim.bin")) {
-      currentMode = MODE_STOCK;
-    }
-
-  }
-
-  display->fillScreen(0);
-  
-  switch(currentMode) {
-    case MODE_STOCK:
-      if (millis() - lastStockFetch > 5000) { 
-        if (systemConfig.stocks.size() > 0) {
-           currentStockIndex = (currentStockIndex + 1) % systemConfig.stocks.size();
-           currentSymbol = systemConfig.stocks[currentStockIndex];
-           fetchYahooData(currentSymbol);
-        }
-        lastStockFetch = millis();
-      }
-      drawStockScreen();
-      break;
-      
-    case MODE_WEATHER:
-      if (millis() - lastWeatherFetch > 300000) fetchWeather();
-      drawWeatherScreen();
-      break;
-
-    case MODE_MESSAGE:
-      drawMessageScreen();
-      break;
-
-      case MODE_GIF:
-      playGif();
-      break;
-  }
-
-  dma->flipDMABuffer();
-  delay(30);
-}
-
-// Helper: Removes -USD, -CAD, etc. from ticker symbols for display
-String getDisplayName(String symbol) {
-  int dashIndex = symbol.indexOf('-');
-  if (dashIndex > 0) {
-    // Returns everything BEFORE the dash (e.g., "BTC-USD" -> "BTC")
-    return symbol.substring(0, dashIndex);
-  }
-  return symbol;
-}
-
-
-// ================================================================
-//                        DRAWING
-// ================================================================
-
-void drawStockScreen() {
-  if (dataCount > 0) drawLineGraph(prices, dataCount);
-
-  // 1. Draw Symbol (CLEANED)
-  // We use the helper here to strip "-USD" just for the screen
-  String displayName = getDisplayName(currentSymbol);
-
-  display->setFont(); // Standard font
-  display->setCursor(0, 0);
-  display->setTextColor(dma->color565(255, 255, 255));
-  display->print(displayName); // Print "BTC" instead of "BTC-USD"
-
-  // 2. Draw Price
-  display->setCursor(0, 8);
-  display->setTextColor(dma->color565(200, 200, 200));
-  display->print(currentPrice);
-
-  // 3. Draw Percentage (Tiny Font)
-  String pctStr = (percentChange > 0 ? "+" : "") + String(percentChange, 1) + "%";
-  int tinyWidth = pctStr.length() * 4; 
-  int xPos = 64 - tinyWidth;
-
-  display->setFont(&PixelItFont); 
-  display->setCursor(xPos, 6);
-
-  if (isStockUp) display->setTextColor(dma->color565(0, 255, 0));
-  else           display->setTextColor(dma->color565(255, 0, 0));
-
-  display->print(pctStr);
-  display->setFont(); // Reset
-}
-
-
-
-void drawWeatherScreen() {
-  // 1. Get Time
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    display->setCursor(0,10);
-    display->setTextColor(dma->color565(255, 0, 0));
-    display->print("No Time");
-    return;
-  }
-
-  // 2. Draw Time (Left Side)
-  char timeStr[6];
-  sprintf(timeStr, "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
-  
-  display->setFont(); 
-  display->setCursor(2, 6);
-  display->setTextColor(dma->color565(255, 255, 255));
-  display->print(timeStr);
-  
-  // --- DATE CHANGE STARTS HERE ---
-  // Old: sprintf(dateStr, "%02d/%02d", timeinfo.tm_mon + 1, timeinfo.tm_mday);
-  
-  // New: "15 Dec" format
-  const char* monthNames[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-  char dateStr[10];
-  
-  // Format: "15 Dec" (%d = Day, %s = Month String)
-  sprintf(dateStr, "%d %s", timeinfo.tm_mday, monthNames[timeinfo.tm_mon]);
-  
-  display->setFont(&PixelItFont); 
-  display->setCursor(2, 22);
-  display->setTextColor(dma->color565(150, 150, 150)); 
-  display->print(dateStr);
-  display->setFont(); 
-  // --- DATE CHANGE ENDS HERE ---
-
-  // 3. Draw Divider
-  display->drawFastVLine(33, 4, 24, dma->color565(80, 80, 80));
-
-  
- // 4. Draw Weather Icon
-  const unsigned char* icon = icon_cloud; 
-  uint16_t iconColor = dma->color565(150, 150, 150); 
-
-  // Detect Nighttime (Before 6AM or After 6PM)
-  bool isNight = (timeinfo.tm_hour < 6 || timeinfo.tm_hour >= 18);
-
-  if (weatherId == 800) { 
-    // Clear Sky
-    if (isNight) { icon = icon_moon; iconColor = dma->color565(200, 200, 200); } // Moon (White/Grey)
-    else         { icon = icon_sun;  iconColor = dma->color565(255, 200, 0); }   // Sun (Gold)
-  } 
-  else if (weatherId == 801) {
-    // Few Clouds
-    if (isNight) { icon = icon_moon; iconColor = dma->color565(200, 200, 200); } 
-    else         { icon = icon_cloud; iconColor = dma->color565(180, 180, 180); }
-  }
-  else if (weatherId >= 200 && weatherId < 300) { icon = icon_storm; iconColor = dma->color565(100, 100, 255); } 
-  else if (weatherId >= 300 && weatherId < 600) { icon = icon_rain;  iconColor = dma->color565(0, 150, 255); } 
-  else if (weatherId >= 600 && weatherId < 700) { icon = icon_snow;  iconColor = dma->color565(255, 255, 255); } 
-  else if (weatherId >= 802) { icon = icon_cloud; iconColor = dma->color565(180, 180, 180); } 
-
-  display->drawBitmap(40, 4, icon, 8, 8, iconColor);
-
-  // 5. Draw Temperature
-  display->setCursor(40, 16);
-  display->setTextColor(dma->color565(255, 255, 0)); 
-  display->print(weatherTemp);
-  
-  // Degree Symbol
-  display->drawPixel(53, 16, dma->color565(255, 255, 0));
-  display->drawPixel(54, 16, dma->color565(255, 255, 0));
-  display->drawPixel(53, 17, dma->color565(255, 255, 0));
-  display->drawPixel(54, 17, dma->color565(255, 255, 0));
-}
-
-void drawMessageScreen() {
-  static int msgX = 64;
-  display->setCursor(msgX, 10);
-  display->setTextColor(dma->color565(255, 0, 255)); 
-  display->print(systemConfig.message);
-  msgX--;
-  if (msgX < -(int)(systemConfig.message.length() * 6)) msgX = 64; 
-}
-
-// ================================================================
-//                        DATA FETCHING
-// ================================================================
-
-void fetchYahooData(String symbol) {
-  String range = systemConfig.graphRange;
-  String filename = "/" + symbol + "_" + range + ".json";
-  bool useCache = false;
-
-  // 1. DEFINE FILTER (Crucial for BTC Monthly)
-  // This reduces memory usage by ~90%
-  StaticJsonDocument<200> filter;
-  filter["chart"]["result"][0]["meta"]["chartPreviousClose"] = true;
-  filter["chart"]["result"][0]["indicators"]["quote"][0]["close"] = true;
-
-  // 2. CHECK CACHE
-  if (LittleFS.exists(filename)) {
-    File f = LittleFS.open(filename, "r");
-    time_t now; 
-    time(&now);
-    time_t fileTime = f.getLastWrite();
-    
-    // Check if file is valid and young (< 5 mins)
-    if (f.size() > 0 && fileTime > 1000 && (now - fileTime) < 300) { 
-      
-      // Attempt to parse directly from file
-      DynamicJsonDocument doc(32768);
-      DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
-      
-      if (!error) {
-        // SUCCESS: Process the data
-        processJSON(doc, symbol);
-        useCache = true;
-      } else {
-        // FAILURE: Corrupt file found. Delete it immediately!
-        Serial.print("Cache Corrupt: "); Serial.println(error.c_str());
-        f.close();
-        LittleFS.remove(filename); 
-        useCache = false; // Force a new download
-      }
-    } else {
-      // File too old or empty
-      f.close();
-    }
-  }
-
-  // 3. CACHE MISS (Download New Data)
-  if (!useCache) {
-    if (WiFi.status() != WL_CONNECTED) {
-      currentPrice = "No WiFi";
-      return;
-    }
-
-    WiFiClientSecure client;
-    client.setInsecure();
-    client.setTimeout(10000); 
-
-    HTTPClient http;
-    http.setUserAgent("Mozilla/5.0 (ESP32)");
-    
-    // Logic for Crypto vs Stock
-    String interval = "5m";
-    bool isCrypto = symbol.endsWith("-USD");
-    bool useRolling24h = (isCrypto && range == "1d");
-
-    if (useRolling24h) {
-       range = "5d"; 
-       interval = "15m";
-    } else {
-       if (range == "1d")       interval = "5m";
-       else if (range == "1mo") interval = "60m"; 
-       else if (range == "6mo") interval = "1d";
-       else if (range == "1y")  interval = "1d";
-       else { range = "1d"; interval = "5m"; }
-    }
-
-    String url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?interval=" + interval + "&range=" + range + "&includePrePost=true";
-
-    if (http.begin(client, url)) {
-      int httpCode = http.GET();
-      if (httpCode == 200) {
-        
-        // STREAMING DOWNLOAD (Fixes RAM issues)
-        // We write directly from WiFi -> File. No "String payload" buffer needed.
-        File f = LittleFS.open(filename, "w");
-        if (f) {
-           http.writeToStream(&f); // Magic line: Streams data to storage
-           f.close();
-        }
-
-        // Now read it back from the file we just saved
-        f = LittleFS.open(filename, "r");
-        if (f) {
-          DynamicJsonDocument doc(32768);
-          DeserializationError error = deserializeJson(doc, f, DeserializationOption::Filter(filter));
-
-          if (!error) {
-             processJSON(doc, symbol);
-          } else {
-             currentPrice = "JsonErr";
-             Serial.println(error.c_str());
-             f.close();
-             LittleFS.remove(filename); // Delete if we downloaded junk
+          },
+          {
+            "@type": "Question",
+            "name": "Does InfoMatrix 3D require a subscription?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. InfoMatrix 3D does not require a monthly subscription and includes lifetime firmware updates."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does InfoMatrix 3D need a phone app or computer?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No app is required. After setup, the stand-alone Wi-Fi device runs independently and can be managed through a web interface from a phone or computer."
+            }
           }
-          f.close();
-        }
-      } else {
-        currentPrice = "HTTP " + String(httpCode);
+        ]
       }
-      http.end();
-    } else {
-      currentPrice = "Conn Fail";
-    }
+    ]
   }
-}
+  </script>
 
-// Helper to process the JSON logic (Shared)
-void processJSON(DynamicJsonDocument& doc, String symbol) {
-  JsonObject result = doc["chart"]["result"][0];
-  JsonObject meta = result["meta"];
-  JsonArray quotes = result["indicators"]["quote"][0]["close"];
-
-  if (!quotes.isNull() && quotes.size() > 0) {
-    std::vector<float> rawData;
-    for (JsonVariant v : quotes) {
-      if (!v.isNull()) rawData.push_back(v.as<float>());
+  <style>
+    :root {
+      --primary: #00d1b2;
+      --primary-dark: #00a88f;
+      --bg: #050505;
+      --card: #111111;
+      --text: #f8fafc;
+      --etsy: #f1641e;
+      --muted: #a9b6c8;
+      --border: #334155;
+      --max-width: 1080px;
     }
 
-    // Crypto Rolling 24h Logic
-    bool isCrypto = symbol.endsWith("-USD");
-    bool useRolling24h = (isCrypto && systemConfig.graphRange == "1d");
-    
-    if (useRolling24h && rawData.size() > 96) {
-       std::vector<float> recentData;
-       int start = rawData.size() - 96; 
-       for(int i = start; i < rawData.size(); i++) recentData.push_back(rawData[i]);
-       rawData = recentData;
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
     }
 
-    int totalPoints = rawData.size();
-    if (totalPoints > 0) {
-      float lastPrice = rawData[totalPoints - 1];
-      float prevClose = meta["chartPreviousClose"].as<float>();
-      
-      if (useRolling24h) prevClose = rawData[0];
-      else if (prevClose == 0.0) prevClose = rawData[0];
+    img { max-width: 100%; }
+    a { color: var(--primary); }
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+    }
 
-      currentPrice = String(lastPrice, 2);
-      percentChange = (prevClose > 0) ? ((lastPrice - prevClose) / prevClose) * 100.0 : 0.0;
-      isStockUp = (percentChange >= 0);
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 10px;
+      z-index: 1000;
+      padding: 10px 14px;
+      color: #000;
+      background: var(--primary);
+      border-radius: 6px;
+    }
+    .skip-link:focus { left: 10px; }
 
-      // Binning Logic (Fit to 64 pixels)
-      dataCount = 0;
-      if (totalPoints <= 64) {
-        for (float p : rawData) prices[dataCount++] = p;
-      } else {
-        for (int i = 0; i < 64; i++) {
-          int startIdx = (i * totalPoints) / 64;
-          int endIdx   = ((i + 1) * totalPoints) / 64;
-          if (endIdx <= startIdx) endIdx = startIdx + 1;
-          if (endIdx > totalPoints) endIdx = totalPoints;
+    .container {
+      width: min(100% - 40px, var(--max-width));
+      margin-inline: auto;
+    }
 
-          float sum = 0; 
-          int count = 0;
-          for (int k = startIdx; k < endIdx; k++) {
-            sum += rawData[k];
-            count++;
-          }
-          if (count > 0) prices[dataCount++] = sum / count;
-        }
+    header {
+      padding: 68px 20px 52px;
+      text-align: center;
+      background: radial-gradient(circle at top, #10231f 0, var(--bg) 44%);
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 0 auto 16px;
+      font-size: clamp(2.25rem, 6vw, 4rem);
+      line-height: 1.08;
+      letter-spacing: -0.045em;
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: clamp(1.7rem, 4vw, 2.3rem);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    h3, h4 { line-height: 1.3; }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--primary);
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      font-size: .82rem;
+    }
+
+    .tagline {
+      max-width: 800px;
+      margin: 0 auto 28px;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 54px;
+      padding: 14px 28px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      text-decoration: none;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    .btn:hover { transform: translateY(-2px); }
+    .btn-etsy {
+      color: #fff;
+      background: var(--etsy);
+      box-shadow: 0 0 22px rgba(241, 100, 30, .34);
+    }
+    .btn-secondary {
+      color: var(--text);
+      border-color: var(--border);
+      background: rgba(255,255,255,.04);
+    }
+
+    .trust-badge {
+      display: block;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    main { padding-bottom: 20px; }
+
+    .hero-media {
+      margin: 0 auto 56px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+    }
+
+    .slideshow-container { position: relative; width: 100%; }
+    .mySlides { display: none; width: 100%; }
+    .slide-asset { display: block; width: 100%; border: 0; }
+    .mySlides img.slide-asset { height: auto; object-fit: contain; }
+
+    .video-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+    .video-wrap iframe { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; }
+
+    .prev, .next {
+      position: absolute;
+      top: 50%;
+      z-index: 10;
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #fff;
+      background: rgba(0, 0, 0, .58);
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 999px;
+      user-select: none;
+    }
+    .prev:hover, .next:hover { background: rgba(0, 0, 0, .82); }
+    .prev { left: 12px; }
+    .next { right: 12px; }
+
+    .dots-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 0 15px;
+      border-top: 1px solid rgba(255,255,255,.06);
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      padding: 0;
+      cursor: pointer;
+      background: rgba(255,255,255,.35);
+      border: 0;
+      border-radius: 50%;
+    }
+    .dot.active { background: var(--primary); }
+    .fade { animation: fade .35s ease; }
+    @keyframes fade { from { opacity: .25; } to { opacity: 1; } }
+
+    .intro, .faq, .contact-section {
+      margin: 56px 0;
+      padding: clamp(26px, 5vw, 44px);
+      background: var(--card);
+      border: 1px solid #222;
+      border-radius: 16px;
+    }
+
+    .intro { text-align: center; }
+    .intro p { max-width: 850px; margin: 12px auto 0; color: var(--muted); }
+
+    .features, .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 48px 0;
+    }
+
+    .feature-card, .detail-item {
+      padding: 28px;
+      background: var(--card);
+      border: 1px solid #222;
+      border-radius: 14px;
+    }
+    .feature-card { text-align: center; }
+    .feature-card i { margin-bottom: 14px; color: var(--primary); font-size: 2rem; }
+    .feature-card h3 { margin: 4px 0 8px; }
+    .feature-card p, .detail-item p { margin-bottom: 0; color: var(--muted); }
+    .detail-item h3 { display: flex; align-items: center; gap: 10px; margin-top: 0; color: var(--primary); }
+
+    .section-heading { margin-top: 68px; text-align: center; }
+    .section-heading p { max-width: 720px; margin: 0 auto; color: var(--muted); }
+
+    .spec-wrap { margin-top: 54px; overflow-x: auto; border: 1px solid #222; border-radius: 12px; }
+    table { width: 100%; min-width: 650px; border-collapse: collapse; background: var(--card); }
+    caption { padding: 20px; font-size: 1.7rem; font-weight: 800; text-align: left; }
+    th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
+    th { color: var(--primary); background: #0d0d0d; }
+    tr:last-child td { border-bottom: 0; }
+    .advanced { color: var(--primary); }
+    .highlight { background: rgba(0, 209, 178, .08); }
+
+    .dimensions-footer, .lead-time { margin-top: 22px; color: var(--muted); text-align: center; font-size: .92rem; }
+
+    .faq-item { padding: 18px 0; border-bottom: 1px solid #2b2b2b; }
+    .faq-item:last-child { border-bottom: 0; }
+    .faq-item h3 { margin: 0 0 8px; font-size: 1.15rem; }
+    .faq-item p { margin: 0; color: var(--muted); }
+
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin: 56px 0;
+      padding: 28px 20px;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
+    }
+    .quick-links a { display: flex; align-items: center; gap: 10px; font-weight: 800; text-decoration: none; }
+
+    label { display: block; margin-top: 14px; font-weight: 700; }
+    input, textarea {
+      width: 100%;
+      margin-top: 7px;
+      padding: 13px;
+      color: #fff;
+      background: #000;
+      border: 1px solid #444;
+      border-radius: 7px;
+      font: inherit;
+    }
+    .btn-send {
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px 30px;
+      cursor: pointer;
+      color: #001b17;
+      background: var(--primary);
+      border: 0;
+      border-radius: 7px;
+      font-weight: 900;
+      font-size: 1rem;
+    }
+    .btn-send:hover { background: #3ce0c7; }
+
+    footer { padding: 44px 20px; color: #768295; text-align: center; font-size: .88rem; border-top: 1px solid #171717; }
+    footer a { text-decoration: none; }
+
+    @media (max-width: 760px) {
+      .container { width: min(100% - 28px, var(--max-width)); }
+      header { padding: 48px 14px 38px; }
+      .btn { width: 100%; max-width: 360px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header>
+    <p class="eyebrow">InfoMatrix 3D</p>
+    <h1>The Smart Desktop Ticker for Stocks, Crypto, Forex, Sports and More</h1>
+    <p class="tagline">Track live stocks, crypto, forex, sports scores, weather, commute times, RSS feeds and smart-home notifications from one customizable desktop display.</p>
+
+    <div class="hero-actions">
+      <a href="https://www.etsy.com/ca/listing/4428438419/stock-crypto-sports-live-ticker-text?etsrc=sdt" target="_blank" rel="noopener noreferrer sponsored" class="btn btn-etsy">
+        <i class="fab fa-etsy" aria-hidden="true"></i> Order on Etsy
+      </a>
+      <a href="https://www.infomatrix3d.com/demo.html" class="btn btn-secondary">Try the Demo</a>
+    </div>
+    <span class="trust-badge"><i class="fas fa-lock" aria-hidden="true"></i> Secure checkout through Etsy Payments</span>
+  </header>
+
+  <main id="main-content" class="container">
+    <section class="hero-media" id="heroMedia" aria-label="InfoMatrix product gallery">
+      <div class="slideshow-container" id="slideshow">
+        <div class="mySlides fade">
+          <img src="image-1.jpg" class="slide-asset" alt="InfoMatrix Wi-Fi stock ticker display in a desktop setup" width="1080" height="608" fetchpriority="high">
+        </div>
+        <div class="mySlides fade">
+          <img src="matrix-nba.jpg" class="slide-asset" alt="InfoMatrix sports ticker displaying live NBA scores" width="1080" height="608" loading="lazy">
+        </div>
+        <div class="mySlides fade">
+          <div class="video-wrap">
+            <iframe class="yt-frame" data-src="https://www.youtube-nocookie.com/embed/CIzUx96CPGs?autoplay=1&amp;mute=1&amp;loop=1&amp;playlist=CIzUx96CPGs&amp;controls=1&amp;rel=0" title="InfoMatrix live stock, crypto and sports ticker demonstration" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="mySlides fade">
+          <div class="video-wrap">
+            <iframe class="yt-frame" data-src="https://www.youtube-nocookie.com/embed/RbewcUMk1GE?autoplay=1&amp;mute=1&amp;loop=1&amp;playlist=RbewcUMk1GE&amp;controls=1&amp;rel=0" title="InfoMatrix audio visualizer demonstration" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div class="mySlides fade">
+          <img src="matrix-epl.jpg" class="slide-asset" alt="InfoMatrix sports ticker displaying live EPL football scores" width="1080" height="608" loading="lazy">
+        </div>
+        <div class="mySlides fade">
+          <img src="image-4.JPEG" class="slide-asset" alt="Close-up of the InfoMatrix desktop stock and sports ticker display" width="1080" height="608" loading="lazy">
+        </div>
+
+        <button class="prev" type="button" aria-label="Show previous slide">&#10094;</button>
+        <button class="next" type="button" aria-label="Show next slide">&#10095;</button>
+      </div>
+      <div class="dots-container" id="dots" aria-label="Choose a gallery slide"></div>
+    </section>
+
+    <section class="intro" aria-labelledby="why-infomatrix">
+      <p class="eyebrow">Live information at a glance</p>
+      <h2 id="why-infomatrix">One Display. Everything Important.</h2>
+      <p>InfoMatrix 3D brings market prices, cryptocurrency charts, sports scores, weather, commute information, custom messages, RSS feeds and connected-app content to one compact LED display. It is designed for traders, investors, sports fans, makers, home offices and professional workspaces.</p>
+      <p>Connect it to Wi-Fi, choose your content and display schedule through the built-in browser dashboard, and let the stand-alone display keep you informed throughout the day. Advanced users can also upload animations, receive MQTT messages and show compatible custom apps.</p>
+    </section>
+
+    <section class="features" aria-label="Key benefits">
+      <article class="feature-card">
+        <i class="fas fa-wifi" aria-hidden="true"></i>
+        <h2>Wi-Fi Connected</h2>
+        <p>A stand-alone ticker display with no daily PC connection or phone app required.</p>
+      </article>
+      <article class="feature-card">
+        <i class="fas fa-chart-line" aria-hidden="true"></i>
+        <h2>Live Market and Sports Data</h2>
+        <p>Follow selected stocks, crypto assets and supported sports leagues using your preferred settings.</p>
+      </article>
+      <article class="feature-card">
+        <i class="fas fa-microchip" aria-hidden="true"></i>
+        <h2>No Monthly Subscription</h2>
+        <p>Make a one-time purchase and receive lifetime firmware updates without a recurring device subscription.</p>
+      </article>
+    </section>
+
+    <section aria-labelledby="feature-heading">
+      <div class="section-heading">
+        <p class="eyebrow">More than a scrolling ticker</p>
+        <h2 id="feature-heading">Stock, Crypto, Sports and Productivity Features</h2>
+        <p>Customize the display for the information and visual modes that matter most to you.</p>
+      </div>
+
+      <div class="details-grid">
+        <article class="detail-item">
+          <h3><i class="fas fa-chart-line" aria-hidden="true"></i> Stocks, Crypto, Forex and Commodities</h3>
+          <p>Track configurable symbols such as stocks, market indexes, cryptocurrencies, foreign exchange pairs and supported commodity futures. Choose text grids, line charts or candlestick charts across time ranges from one hour to one year.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-bell" aria-hidden="true"></i> Price Alerts and Custom Names</h3>
+          <p>Create upper or lower price alerts for selected symbols. When a condition is met, the price can flash and the device can sound an audible alert. You can also show supported logos and assign easy-to-read ticker names.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-trophy" aria-hidden="true"></i> Live Scores Across Major Sports</h3>
+          <p>Follow selected teams or all available games across the NBA, NFL, NHL and MLB, plus NCAA basketball, football and baseball, international cricket, the FIFA World Cup, English Premier League and UEFA Champions League.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-cloud-sun" aria-hidden="true"></i> Time, Weather and Night Mode</h3>
+          <p>Display local time and weather in Celsius or Fahrenheit, use automatic timezone settings and schedule night mode to reduce brightness during selected hours.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-car" aria-hidden="true"></i> Multi-Mode Commute Tracking</h3>
+          <p>View estimated travel information for private vehicles, buses, rail transit or train and park-and-ride trips. Configure an origin, destination, station and active commute window.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-bullhorn" aria-hidden="true"></i> Custom Messages and RSS Feeds</h3>
+          <p>Configure up to three colour-coded text banners or RSS feed URLs for announcements, headlines, promotions and personalized information.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-image" aria-hidden="true"></i> GIF Animation Upload</h3>
+          <p>Upload animated GIFs and resize them for your displays using stretch, fit or crop modes with an on-screen preview.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-puzzle-piece" aria-hidden="true"></i> Custom Apps and App Catalog</h3>
+          <p>Advanced users can display compatible WebP-based custom apps, including Tronbyt and Tidbyt Pixlet content, and select content from the integrated app catalog.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-network-wired" aria-hidden="true"></i> MQTT Message Integration</h3>
+          <p>Connect the ticker to an MQTT broker and display JSON or plain-text messages from a configured topic, making it useful for smart-home events, system notifications and custom automations.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-wave-square" aria-hidden="true"></i> Audio Visualizer</h3>
+          <p>Turn InfoMatrix into a real-time music visualizer with high-speed DDP pixel streaming and compatible tools such as LedFx.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-clock" aria-hidden="true"></i> Configurable Pomodoro Timer</h3>
+          <p>Set custom work and break durations, then activate Focus Mode from the dashboard or by holding the physical device button.</p>
+        </article>
+        <article class="detail-item">
+          <h3><i class="fas fa-sliders-h" aria-hidden="true"></i> Complete Browser Dashboard</h3>
+          <p>Adjust brightness, content durations, sports teams, market symbols, data sources and advanced integrations from a phone or computer. Preview the LED display live, export or import settings and restore factory defaults when needed.</p>
+          <p><a href="https://www.infomatrix3d.com/demo.html">Try the InfoMatrix demo interface</a>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="specifications-heading">
+      <div class="section-heading">
+        <p class="eyebrow">Choose your display</p>
+        <h2 id="specifications-heading">InfoMatrix Model Specifications</h2>
+      </div>
+
+      <div class="dimensions-footer">
+        <strong>Physical dimensions:</strong><br>
+        Medium: 260 mm × 132 mm × 38 mm | Large: 330 mm × 162 mm × 38 mm
+      </div>
+
+      <div class="spec-wrap">
+        <table>
+          <caption>Available InfoMatrix 3D models</caption>
+          <thead>
+            <tr>
+              <th scope="col">Model</th>
+              <th scope="col">Enclosure size</th>
+              <th scope="col">Display resolution</th>
+              <th scope="col">Processor class</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>M9-64</td><td>Medium</td><td>64 × 32 px</td><td>Standard</td></tr>
+            <tr><td>M12-64</td><td>Large</td><td>64 × 32 px</td><td>Standard</td></tr>
+            <tr><td>M12-80</td><td>Large</td><td>80 × 40 px</td><td>Standard</td></tr>
+            <tr class="highlight"><td>X9-64</td><td>Medium</td><td>64 × 32 px</td><td class="advanced">Advanced</td></tr>
+            <tr class="highlight"><td>X12-80</td><td>Large</td><td>80 × 40 px</td><td class="advanced">Advanced</td></tr>
+            <tr class="highlight"><td>X12-128</td><td>Large</td><td>128 × 64 px</td><td class="advanced">Advanced</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="lead-time"><i class="fas fa-check-circle" aria-hidden="true"></i> Each unit is hand-calibrated and tested for 24 hours.<br><strong>Current lead time: 3 to 5 days.</strong></p>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-heading">
+      <p class="eyebrow">Frequently asked questions</p>
+      <h2 id="faq-heading">InfoMatrix Stock and Sports Ticker FAQ</h2>
+
+      <article class="faq-item">
+        <h3>What market data can InfoMatrix 3D display?</h3>
+        <p>InfoMatrix can display configurable stocks, market indexes, cryptocurrencies, forex pairs and supported commodity futures using text grids, line charts or candlestick charts.</p>
+      </article>
+      <article class="faq-item">
+        <h3>Which sports are supported?</h3>
+        <p>The dashboard supports the NBA, NFL, NHL, MLB, NCAA basketball, NCAA football, NCAA baseball, cricket, the FIFA World Cup, English Premier League and UEFA Champions League.</p>
+      </article>
+      <article class="faq-item">
+        <h3>Can I display my own content?</h3>
+        <p>Yes. You can configure text banners and RSS feeds, upload animated GIFs, receive MQTT messages and use compatible WebP-based custom apps.</p>
+      </article>
+      <article class="faq-item">
+        <h3>Can I control what appears and for how long?</h3>
+        <p>Yes. The browser dashboard provides individual display durations for stocks, weather, messages, GIFs, commute information and supported sports categories.</p>
+      </article>
+      <article class="faq-item">
+        <h3>Does InfoMatrix 3D require a subscription?</h3>
+        <p>No. InfoMatrix 3D does not require a monthly device subscription and includes lifetime firmware updates.</p>
+      </article>
+      <article class="faq-item">
+        <h3>Does it require a phone app or daily computer connection?</h3>
+        <p>No app is required. After setup, the Wi-Fi ticker runs independently and can be managed through its browser-based dashboard from a phone or computer.</p>
+      </article>
+    </section>
+
+    <nav class="quick-links" aria-label="Product resources">
+      <a href="https://www.infomatrix3d.com/help.html"><i class="fas fa-question-circle" aria-hidden="true"></i> Help and Documentation</a>
+      <a href="https://www.infomatrix3d.com/demo.html"><i class="fas fa-desktop" aria-hidden="true"></i> Try the Demo UI</a>
+    </nav>
+
+    <section class="intro" aria-labelledby="ready-heading">
+      <p class="eyebrow">Built for your desk</p>
+      <h2 id="ready-heading">Bring Your Markets, Teams and Data Into View</h2>
+      <p>Choose an InfoMatrix model that fits your workspace, configure the information you care about and enjoy an always-visible display without a monthly device subscription.</p>
+      <div class="hero-actions" style="margin-top:24px;">
+        <a href="https://www.etsy.com/ca/listing/4428438419/stock-crypto-sports-live-ticker-text?etsrc=sdt" target="_blank" rel="noopener noreferrer sponsored" class="btn btn-etsy"><i class="fab fa-etsy" aria-hidden="true"></i> Order on Etsy</a>
+        <a href="https://www.infomatrix3d.com/demo.html" class="btn btn-secondary">Explore the Dashboard</a>
+      </div>
+    </section>
+
+    <section class="contact-section" aria-labelledby="contact-heading">
+      <h2 id="contact-heading">Have a Question About InfoMatrix?</h2>
+      <p>Send a message about models, features, setup or ordering.</p>
+
+      <form action="https://api.web3forms.com/submit" method="POST">
+        <!-- Replace this placeholder with a newly generated Web3Forms access key. -->
+        <input type="hidden" name="access_key" value="cd58c4f2-40e7-4aa5-bbbd-908be8c2ba3e">
+        <input type="hidden" name="subject" value="New InfoMatrix 3D website inquiry">
+        <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
+
+        <label for="name">Name</label>
+        <input id="name" type="text" name="name" autocomplete="name" required>
+
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" autocomplete="email" required>
+
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="5" required></textarea>
+
+        <button type="submit" class="btn-send">Send Inquiry</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 InfoMatrix 3D. Hand-assembled for your desktop.</p>
+    <p><a href="https://www.infomatrix3d.com/help.html">Documentation</a> · <a href="https://www.infomatrix3d.com/demo.html">Demo</a></p>
+  </footer>
+
+  <script>
+    (() => {
+      let slideIndex = 0;
+      let timer = null;
+      const intervalMs = 10000;
+      const heroMedia = document.getElementById("heroMedia");
+      const slides = Array.from(document.querySelectorAll(".mySlides"));
+      const prevBtn = document.querySelector(".prev");
+      const nextBtn = document.querySelector(".next");
+      const dotsWrap = document.getElementById("dots");
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      const dots = slides.map((_, index) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "dot";
+        dot.setAttribute("aria-label", `Show slide ${index + 1}`);
+        dot.addEventListener("click", () => {
+          showSlide(index);
+          restartAuto();
+        });
+        dotsWrap.appendChild(dot);
+        return dot;
+      });
+
+      function loadVideo(slide) {
+        const iframe = slide?.querySelector("iframe.yt-frame");
+        if (iframe && !iframe.src && iframe.dataset.src) iframe.src = iframe.dataset.src;
       }
-    }
-  }
-}
 
-
-void fetchWeather() {
-  // Safety Checks
-  if (systemConfig.weatherKey == "") {
-    Serial.println("Weather: No API Key");
-    return;
-  }
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Weather: No WiFi");
-    return;
-  }
-
-  HTTPClient http;
-  http.setTimeout(5000); 
-  
-  // --- STEP 1: CLEAN INPUTS ---
-  // Create local copies so we don't mess up the global config
-  String safeCity = systemConfig.city;
-  String safeKey = systemConfig.weatherKey;
-
-  // Remove accidental spaces from start/end
-  safeCity.trim();
-  safeKey.trim();
-
-  // URL Encode the City (Replace spaces with %20 and commas with %2C)
-  // This turns "New York, US" into "New%20York%2C%20US"
-  safeCity.replace(" ", "%20");
-  safeCity.replace(",", "%2C");
-
-  // --- STEP 2: BUILD URL ---
-  String url = "http://api.openweathermap.org/data/2.5/weather?q=" + safeCity + "&appid=" + safeKey + "&units=metric";
-  
-  // DEBUG: Print the URL to Serial (so you can see if it looks wrong)
-  Serial.print("Weather URL: "); 
-  Serial.println(url); 
-  
-  // --- STEP 3: FETCH ---
-  if (http.begin(url)) {
-    int httpCode = http.GET();
-    
-    if (httpCode == 200) {
-      String payload = http.getString();
-      DynamicJsonDocument doc(1024);
-      DeserializationError error = deserializeJson(doc, payload);
-
-      if (!error) {
-        float temp = doc["main"]["temp"];
-        weatherTemp = String(temp, 0); 
-        
-        String main = doc["weather"][0]["main"];
-        weatherDesc = main;
-        
-        weatherId = doc["weather"][0]["id"];
-        
-        Serial.print("Weather Success! Temp: "); Serial.println(weatherTemp);
-      } else {
-        Serial.print("Weather JSON Error: "); Serial.println(error.c_str());
+      function stopVideo(slide) {
+        const iframe = slide?.querySelector("iframe.yt-frame");
+        if (!iframe || !iframe.src) return;
+        iframe.src = "";
       }
-    } else {
-      Serial.print("Weather HTTP Error: "); Serial.println(httpCode);
-      // Print the server's error message (often explains WHY it failed)
-      Serial.println(http.getString()); 
-    }
-    http.end();
-  } else {
-    Serial.println("Weather Connection Failed");
-  }
-  
-  // Timer Logic
-  if (weatherTemp != "--") {
-    lastWeatherFetch = millis();
-  } else {
-    // Retry sooner (30 seconds) if failed
-    lastWeatherFetch = millis() - (10000 - 30000); 
-  }
-}
 
-void drawLineGraph(float *data, int count) {
-  if (count < 2) return;
-  uint16_t color = isStockUp ? dma->color565(0, 255, 0) : dma->color565(255, 0, 0);
-  uint16_t fadeColor = isStockUp ? dma->color565(0, 40, 0) : dma->color565(40, 0, 0);
-  float minVal = 99999;
-  float maxVal = -99999;
-  for (int i = 0; i < count; i++) {
-    if (data[i] < minVal) minVal = data[i];
-    if (data[i] > maxVal) maxVal = data[i];
-  }
-  if (maxVal == minVal) maxVal = minVal + 1; 
-  int oldX = 0;
-  int oldY = mapFloat(data[0], minVal, maxVal, 31, 17); 
-  for (int i = 0; i < count; i++) {
-    int x = map(i, 0, count - 1, 0, 63);
-    int y = mapFloat(data[i], minVal, maxVal, 31, 17); 
-    display->drawFastVLine(x, y, 32 - y, fadeColor);
-    if (i > 0) display->drawLine(oldX, oldY, x, y, color);
-    oldX = x; oldY = y;
-  }
-}
+      function showSlide(index) {
+        if (!slides.length) return;
+        if (index >= slides.length) index = 0;
+        if (index < 0) index = slides.length - 1;
 
-long mapFloat(float x, float in_min, float in_max, long out_min, long out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
+        stopVideo(slides[slideIndex]);
+        slides.forEach(slide => { slide.style.display = "none"; });
+        dots.forEach(dot => {
+          dot.classList.remove("active");
+          dot.removeAttribute("aria-current");
+        });
 
-void saveConfig() {
-  DynamicJsonDocument doc(1024);
-  doc["ssid"] = systemConfig.ssid;
-  doc["pass"] = systemConfig.pass;
-  JsonArray arr = doc.createNestedArray("stocks");
-  for(String s : systemConfig.stocks) arr.add(s);
-  doc["weatherKey"] = systemConfig.weatherKey;
-  doc["city"] = systemConfig.city;
-  doc["message"] = systemConfig.message;
-  doc["tz"] = systemConfig.timezoneOffset;
-  doc["range"] = systemConfig.graphRange; // Save Range
-  File file = LittleFS.open("/config.json", "w");
-  serializeJson(doc, file);
-  file.close();
-}
+        slides[index].style.display = "block";
+        dots[index]?.classList.add("active");
+        dots[index]?.setAttribute("aria-current", "true");
+        loadVideo(slides[index]);
+        slideIndex = index;
+      }
 
-void loadConfig() {
-  if (LittleFS.exists("/config.json")) {
-    File file = LittleFS.open("/config.json", "r");
-    DynamicJsonDocument doc(1024);
-    deserializeJson(doc, file);
-    file.close();
-    systemConfig.ssid = doc["ssid"].as<String>();
-    systemConfig.pass = doc["pass"].as<String>();
-    JsonArray arr = doc["stocks"];
-    systemConfig.stocks.clear();
-    for(String s : arr) systemConfig.stocks.push_back(s);
-    systemConfig.weatherKey = doc["weatherKey"] | "";
-    systemConfig.city = doc["city"] | "New York,US";
-    systemConfig.message = doc["message"] | "";
-    systemConfig.timezoneOffset = doc["tz"] | -5; 
-    systemConfig.graphRange = doc["range"] | "1d"; // Load Range
-  }
-}
+      function nextSlide() { showSlide(slideIndex + 1); }
+      function previousSlide() { showSlide(slideIndex - 1); }
+      function stopAuto() { if (timer) window.clearInterval(timer); timer = null; }
+      function startAuto() {
+        stopAuto();
+        if (!prefersReducedMotion) timer = window.setInterval(nextSlide, intervalMs);
+      }
+      function restartAuto() { startAuto(); }
 
-void setupWiFi() {
-  if(systemConfig.ssid == "" || systemConfig.ssid == "null") {
-    isAPMode = true;
-  } else {
-    display->setFont(&PixelItFont);
-    display->fillScreen(0);
-    display->setCursor(0,6);
-    display->print("Connecting WiFi...");
-    dma->flipDMABuffer();
-    WiFi.begin(systemConfig.ssid.c_str(), systemConfig.pass.c_str());
-    int retries = 0;
-    while(WiFi.status() != WL_CONNECTED && retries < 20) { delay(500); retries++; }
-    if(WiFi.status() == WL_CONNECTED) {
-      isAPMode = false;
-      display->fillScreen(0); display->setCursor(1,13); display->print("IP:"); display->setCursor(14,13); display->print(WiFi.localIP());
-      dma->flipDMABuffer(); delay(3000);
-      
-    } else { isAPMode = true; }
-    display->setFont();
-  }
-  getSerial();
-  if (isAPMode) WiFi.softAP(serialDigits, "12345678");
-}
+      prevBtn?.addEventListener("click", () => { previousSlide(); restartAuto(); });
+      nextBtn?.addEventListener("click", () => { nextSlide(); restartAuto(); });
+      heroMedia?.addEventListener("mouseenter", stopAuto);
+      heroMedia?.addEventListener("mouseleave", startAuto);
+      heroMedia?.addEventListener("focusin", stopAuto);
+      heroMedia?.addEventListener("focusout", startAuto);
+      document.addEventListener("visibilitychange", () => document.hidden ? stopAuto() : startAuto());
+
+      showSlide(0);
+      startAuto();
+    })();
+  </script>
+</body>
+</html>
