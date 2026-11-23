@@ -1,0 +1,1363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>InfoMatrix MQTT Publisher</title>
+
+<style>
+:root {
+  color-scheme: light dark;
+
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --text: #172033;
+  --muted: #64748b;
+  --border: #d9e1ec;
+  --accent: #2563eb;
+  --good: #15803d;
+  --bad: #b91c1c;
+  --code: #0f172a;
+  --codeText: #e2e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --card: #111827;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --border: #334155;
+    --accent: #60a5fa;
+    --good: #4ade80;
+    --bad: #f87171;
+    --code: #020617;
+    --codeText: #e2e8f0;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+main {
+  max-width: 920px;
+  margin: 32px auto;
+  padding: 0 16px 40px;
+}
+
+.title {
+  margin-bottom: 20px;
+}
+
+.title h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.title p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 3px 14px rgba(15,23,42,.05);
+}
+
+.card h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.field {
+  margin: 0 0 12px;
+}
+
+.field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 9px;
+  padding: 10px 11px;
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+button {
+  border: 0;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--accent);
+  color: white;
+}
+
+.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.status {
+  margin-top: 10px;
+  color: var(--muted);
+  min-height: 20px;
+}
+
+.status.good {
+  color: var(--good);
+}
+
+.status.bad {
+  color: var(--bad);
+}
+
+pre {
+  margin: 0;
+  background: var(--code);
+  color: var(--codeText);
+  padding: 14px;
+  border-radius: 10px;
+  overflow: auto;
+  min-height: 150px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.check input {
+  width: auto;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.hidden {
+  display: none;
+}
+
+.small {
+  font-size: 12px;
+  color: var(--muted);
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+  <div class="title">
+    <h1>InfoMatrix MQTT Publisher</h1>
+    <p>
+      Generate your display JSON, copy it,
+      or publish it directly through MQTT over secure WebSockets.
+    </p>
+  </div>
+
+  <div class="grid">
+
+    <!-- ======================================= -->
+    <!-- MQTT CONNECTION -->
+    <!-- ======================================= -->
+
+    <section class="card">
+
+      <h2>MQTT Connection</h2>
+
+      <div class="field">
+        <label for="broker">WSS Broker URL</label>
+
+        <input
+          id="broker"
+          placeholder="wss://broker.example.com:8084/mqtt"
+        >
+
+        <div class="hint">
+          The broker must support MQTT over WebSockets.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="topic">Topic</label>
+
+        <input
+          id="topic"
+          value="infomatrix/text"
+        >
+      </div>
+
+      <div class="row">
+
+        <div class="field">
+          <label for="username">Username</label>
+
+          <input
+            id="username"
+            autocomplete="username"
+          >
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+          >
+        </div>
+
+      </div>
+
+      <div class="actions">
+
+        <button
+          id="connectBtn"
+          type="button"
+          class="primary"
+        >
+          Connect
+        </button>
+
+        <button
+          id="disconnectBtn"
+          type="button"
+          class="secondary"
+          disabled
+        >
+          Disconnect
+        </button>
+
+      </div>
+
+      <div
+        id="connectionStatus"
+        class="status"
+        aria-live="polite"
+      >
+        Not connected
+      </div>
+
+      <div class="small">
+        Credentials are only used for the current browser
+        MQTT connection and are not included in the JSON payload.
+      </div>
+
+    </section>
+
+
+    <!-- ======================================= -->
+    <!-- MESSAGE -->
+    <!-- ======================================= -->
+
+    <section class="card">
+
+      <h2>Message</h2>
+
+      <div class="field">
+
+        <label for="type">
+          Message Type
+        </label>
+
+        <select id="type">
+
+          <option value="text">
+            Text
+          </option>
+
+          <option value="webp">
+            WebP Image / Animation
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- TEXT -->
+
+      <div id="textFields">
+
+        <div class="field">
+
+          <label for="text">
+            Text
+          </label>
+
+          <textarea
+            id="text"
+            placeholder="Hello World"
+          ></textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="effect">
+            Effect
+          </label>
+
+          <select id="effect">
+
+            <option value="scroll-left">
+              Scroll Left
+            </option>
+
+            <option value="scroll-right">
+              Scroll Right
+            </option>
+
+            <option value="scroll-up">
+              Scroll Up
+            </option>
+
+            <option value="static-center">
+              Static Center
+            </option>
+
+            <option value="blink">
+              Blink
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- WEBP -->
+
+      <div
+        id="webpFields"
+        class="hidden"
+      >
+
+        <div class="field">
+
+          <label for="webpUrl">
+            WebP URL
+          </label>
+
+          <input
+            id="webpUrl"
+            type="url"
+            placeholder="https://example.com/alert.webp"
+          >
+
+          <div class="hint">
+            HTTPS URL required.
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- DURATION / QOS -->
+
+      <div class="row">
+
+        <div class="field">
+
+          <label for="duration">
+            Duration (seconds)
+          </label>
+
+          <input
+            id="duration"
+            type="number"
+            min="0"
+            max="86400"
+            value="15"
+          >
+
+          <div class="hint">
+            0 = active until replaced
+          </div>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="qos">
+            Publish QoS
+          </label>
+
+          <select id="qos">
+
+            <option value="0">
+              0
+            </option>
+
+            <option value="1">
+              1
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- BUZZER -->
+
+      <div class="check">
+
+        <input
+          id="buzzer"
+          type="checkbox"
+        >
+
+        <label for="buzzer">
+          Buzzer
+        </label>
+
+      </div>
+
+
+      <div
+        id="buzzerFields"
+        class="hidden"
+        style="margin-top:10px"
+      >
+
+        <div class="row">
+
+          <div class="field">
+
+            <label for="beepCount">
+              Beep Count
+            </label>
+
+            <input
+              id="beepCount"
+              type="number"
+              min="1"
+              max="10"
+              value="2"
+            >
+
+          </div>
+
+
+          <div class="field">
+
+            <label for="beepFrequency">
+              Frequency (Hz)
+            </label>
+
+            <input
+              id="beepFrequency"
+              type="number"
+              min="100"
+              value="2200"
+            >
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ======================================= -->
+    <!-- JSON PAYLOAD -->
+    <!-- ======================================= -->
+
+    <section class="card full">
+
+      <h2>JSON Payload</h2>
+
+      <pre
+        id="preview"
+        aria-live="polite"
+      ></pre>
+
+
+      <div class="actions">
+
+        <button
+          id="copyBtn"
+          type="button"
+          class="secondary"
+        >
+          Copy JSON
+        </button>
+
+        <button
+          id="publishBtn"
+          type="button"
+          class="primary"
+          disabled
+        >
+          Publish
+        </button>
+
+      </div>
+
+
+      <div
+        id="publishStatus"
+        class="status"
+        aria-live="polite"
+      ></div>
+
+    </section>
+
+  </div>
+
+</main>
+
+
+<!--
+==============================================================
+MQTT.JS
+==============================================================
+
+To enable MQTT publishing, place mqtt.min.js beside this HTML
+file and uncomment:
+
+<script src="mqtt.min.js"></script>
+
+The JSON generator works without MQTT.js.
+-->
+
+
+<script>
+
+(() => {
+
+  const root = document;
+
+  const $ = id =>
+    root.getElementById(id);
+
+
+  let client = null;
+  let connected = false;
+
+
+  // =========================================================
+  // INTEGER INPUT HELPER
+  // =========================================================
+
+  function intValue(
+    id,
+    fallback,
+    min,
+    max
+  ) {
+
+    let n =
+      Number.parseInt(
+        $(id).value,
+        10
+      );
+
+    if (!Number.isFinite(n)) {
+      n = fallback;
+    }
+
+    return Math.max(
+      min,
+      Math.min(max, n)
+    );
+  }
+
+
+
+  // =========================================================
+  // BUILD JSON PAYLOAD
+  // =========================================================
+
+  function buildPayload() {
+
+    const type =
+      $("type").value;
+
+    const durationSeconds =
+      intValue(
+        "duration",
+        15,
+        0,
+        86400
+      );
+
+
+    const payload = {
+
+      type: type,
+
+      durationMs:
+        durationSeconds * 1000
+
+    };
+
+
+    // -------------------------------------------------------
+    // WEBP
+    // -------------------------------------------------------
+
+    if (type === "webp") {
+
+      payload.url =
+        $("webpUrl")
+          .value
+          .trim();
+
+    }
+
+
+    // -------------------------------------------------------
+    // TEXT
+    // -------------------------------------------------------
+
+    else {
+
+      payload.text =
+        $("text").value;
+
+      payload.effects =
+        $("effect").value;
+
+    }
+
+
+    // -------------------------------------------------------
+    // BUZZER
+    // -------------------------------------------------------
+
+    if ($("buzzer").checked) {
+
+      payload.buzzer = true;
+
+      payload.beepCount =
+        intValue(
+          "beepCount",
+          2,
+          1,
+          10
+        );
+
+      payload.beepFrequency =
+        intValue(
+          "beepFrequency",
+          2200,
+          100,
+          20000
+        );
+
+    }
+
+
+    return payload;
+  }
+
+
+
+  // =========================================================
+  // JSON PREVIEW
+  // =========================================================
+
+  function updatePreview() {
+
+    $("preview").textContent =
+      JSON.stringify(
+        buildPayload(),
+        null,
+        2
+      );
+
+  }
+
+
+
+  // =========================================================
+  // STATUS
+  // =========================================================
+
+  function setConnectionStatus(
+    text,
+    kind = ""
+  ) {
+
+    $("connectionStatus")
+      .textContent = text;
+
+    $("connectionStatus")
+      .className =
+        "status" +
+        (kind ? " " + kind : "");
+
+  }
+
+
+  function setPublishStatus(
+    text,
+    kind = ""
+  ) {
+
+    $("publishStatus")
+      .textContent = text;
+
+    $("publishStatus")
+      .className =
+        "status" +
+        (kind ? " " + kind : "");
+
+  }
+
+
+
+  // =========================================================
+  // CONNECTED STATE
+  // =========================================================
+
+  function setConnected(value) {
+
+    connected = value;
+
+    $("connectBtn")
+      .disabled = value;
+
+    $("disconnectBtn")
+      .disabled = !value;
+
+    $("publishBtn")
+      .disabled = !value;
+
+  }
+
+
+
+  // =========================================================
+  // MESSAGE TYPE
+  // =========================================================
+
+  function updateTypeFields() {
+
+    const webp =
+      $("type").value === "webp";
+
+
+    $("textFields")
+      .classList
+      .toggle(
+        "hidden",
+        webp
+      );
+
+
+    $("webpFields")
+      .classList
+      .toggle(
+        "hidden",
+        !webp
+      );
+
+
+    updatePreview();
+
+  }
+
+
+
+  // =========================================================
+  // COPY JSON
+  // =========================================================
+
+  async function copyJson() {
+
+    const text =
+      JSON.stringify(
+        buildPayload(),
+        null,
+        2
+      );
+
+
+    try {
+
+      await navigator
+        .clipboard
+        .writeText(text);
+
+
+      setPublishStatus(
+        "JSON copied.",
+        "good"
+      );
+
+    }
+
+    catch (_) {
+
+      setPublishStatus(
+        "Clipboard access was blocked. Select and copy the JSON manually.",
+        "bad"
+      );
+
+    }
+
+  }
+
+
+
+  // =========================================================
+  // MQTT CONNECT
+  // =========================================================
+
+  function connect() {
+
+    const broker =
+      $("broker")
+        .value
+        .trim();
+
+
+    // Require WSS
+
+    if (!broker.startsWith("wss://")) {
+
+      setConnectionStatus(
+        "Enter a secure WebSocket URL beginning with wss://",
+        "bad"
+      );
+
+      return;
+
+    }
+
+
+    // MQTT.js loaded?
+
+    if (
+      !window.mqtt ||
+      typeof window.mqtt.connect !==
+        "function"
+    ) {
+
+      setConnectionStatus(
+        "MQTT.js is not loaded. JSON generation still works; load mqtt.min.js to enable publishing.",
+        "bad"
+      );
+
+      return;
+
+    }
+
+
+    // Remove previous client
+
+    if (client) {
+
+      try {
+        client.end(true);
+      }
+      catch (_) {}
+
+      client = null;
+
+    }
+
+
+    // MQTT connection options
+
+    const opts = {
+
+      clientId:
+        "infomatrix-web-" +
+        Math.random()
+          .toString(16)
+          .slice(2,10),
+
+      clean: true,
+
+      connectTimeout: 10000,
+
+      reconnectPeriod: 0
+
+    };
+
+
+    // Username
+
+    if ($("username").value) {
+
+      opts.username =
+        $("username").value;
+
+    }
+
+
+    // Password
+
+    if ($("password").value) {
+
+      opts.password =
+        $("password").value;
+
+    }
+
+
+    setConnectionStatus(
+      "Connecting..."
+    );
+
+
+    try {
+
+      client =
+        window.mqtt.connect(
+          broker,
+          opts
+        );
+
+
+      // CONNECTED
+
+      client.on(
+        "connect",
+        () => {
+
+          setConnected(true);
+
+          setConnectionStatus(
+            "Connected",
+            "good"
+          );
+
+        }
+      );
+
+
+      // ERROR
+
+      client.on(
+        "error",
+        err => {
+
+          setConnectionStatus(
+
+            "Connection error: " +
+
+            (
+              err &&
+              err.message
+                ? err.message
+                : "unknown error"
+            ),
+
+            "bad"
+
+          );
+
+        }
+      );
+
+
+      // CLOSED
+
+      client.on(
+        "close",
+        () => {
+
+          setConnected(false);
+
+          setConnectionStatus(
+            "Disconnected"
+          );
+
+        }
+      );
+
+    }
+
+    catch (err) {
+
+      setConnected(false);
+
+      setConnectionStatus(
+        "Connection failed: " +
+        err.message,
+        "bad"
+      );
+
+    }
+
+  }
+
+
+
+  // =========================================================
+  // MQTT DISCONNECT
+  // =========================================================
+
+  function disconnect() {
+
+    if (client) {
+
+      client.end(true);
+
+      client = null;
+
+    }
+
+
+    setConnected(false);
+
+    setConnectionStatus(
+      "Disconnected"
+    );
+
+  }
+
+
+
+  // =========================================================
+  // MQTT PUBLISH
+  // =========================================================
+
+  function publish() {
+
+    if (
+      !connected ||
+      !client
+    ) {
+
+      setPublishStatus(
+        "Connect to the broker first.",
+        "bad"
+      );
+
+      return;
+
+    }
+
+
+    const topic =
+      $("topic")
+        .value
+        .trim();
+
+
+    const payload =
+      buildPayload();
+
+
+    // Topic validation
+
+    if (!topic) {
+
+      setPublishStatus(
+        "Topic is required.",
+        "bad"
+      );
+
+      return;
+
+    }
+
+
+    // Text validation
+
+    if (
+      payload.type === "text" &&
+      !payload.text.trim()
+    ) {
+
+      setPublishStatus(
+        "Text is required.",
+        "bad"
+      );
+
+      return;
+
+    }
+
+
+    // WebP validation
+
+    if (
+      payload.type === "webp" &&
+      !payload.url.startsWith(
+        "https://"
+      )
+    ) {
+
+      setPublishStatus(
+        "WebP URL must begin with https://",
+        "bad"
+      );
+
+      return;
+
+    }
+
+
+    const qos =
+      Number(
+        $("qos").value
+      ) === 1
+        ? 1
+        : 0;
+
+
+    // Publish MQTT message
+
+    client.publish(
+
+      topic,
+
+      JSON.stringify(payload),
+
+      {
+        qos: qos,
+        retain: false
+      },
+
+      err => {
+
+        if (err) {
+
+          setPublishStatus(
+            "Publish failed: " +
+            err.message,
+            "bad"
+          );
+
+        }
+
+        else {
+
+          setPublishStatus(
+            "Published to " +
+            topic,
+            "good"
+          );
+
+        }
+
+      }
+
+    );
+
+  }
+
+
+
+  // =========================================================
+  // FORM EVENT LISTENERS
+  // =========================================================
+
+  [
+    "broker",
+    "topic",
+    "username",
+    "password",
+    "text",
+    "effect",
+    "webpUrl",
+    "duration",
+    "qos",
+    "beepCount",
+    "beepFrequency"
+  ]
+  .forEach(
+    id => {
+
+      $(id)
+        .addEventListener(
+          "input",
+          updatePreview
+        );
+
+      $(id)
+        .addEventListener(
+          "change",
+          updatePreview
+        );
+
+    }
+  );
+
+
+
+  // Message type
+
+  $("type")
+    .addEventListener(
+      "change",
+      updateTypeFields
+    );
+
+
+
+  // Buzzer
+
+  $("buzzer")
+    .addEventListener(
+      "change",
+      () => {
+
+        $("buzzerFields")
+          .classList
+          .toggle(
+            "hidden",
+            !$("buzzer").checked
+          );
+
+        updatePreview();
+
+      }
+    );
+
+
+
+  // Copy
+
+  $("copyBtn")
+    .addEventListener(
+      "click",
+      copyJson
+    );
+
+
+
+  // Connect
+
+  $("connectBtn")
+    .addEventListener(
+      "click",
+      connect
+    );
+
+
+
+  // Disconnect
+
+  $("disconnectBtn")
+    .addEventListener(
+      "click",
+      disconnect
+    );
+
+
+
+  // Publish
+
+  $("publishBtn")
+    .addEventListener(
+      "click",
+      publish
+    );
+
+
+
+  // =========================================================
+  // INITIALIZE
+  // =========================================================
+
+  updateTypeFields();
+
+  setConnected(false);
+
+})();
+
+</script>
+
+</body>
+</html>
