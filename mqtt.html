@@ -1021,6 +1021,14 @@ function buildPayload() {
         5
       );
 
+    payload.scrollSpeedMs =
+  intValue(
+    "scrollSpeedMs",
+    30,
+    10,
+    200
+  );
+
 
     if ($("blink").checked) {
 
