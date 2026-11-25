@@ -1,560 +1,585 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en-CA">
 <head>
-<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
-<meta name=Generator content="Microsoft Word 15 (filtered)">
-<style>
-<!--
- /* Font Definitions */
- @font-face
-	{font-family:Wingdings;
-	panose-1:5 0 0 0 0 0 0 0 0 0;}
-@font-face
-	{font-family:"Cambria Math";
-	panose-1:2 4 5 3 5 4 6 3 2 4;}
-@font-face
-	{font-family:Calibri;
-	panose-1:2 15 5 2 2 2 4 3 2 4;}
-@font-face
-	{font-family:"Segoe UI Emoji";
-	panose-1:2 11 5 2 4 2 4 2 2 3;}
- /* Style Definitions */
- p.MsoNormal, li.MsoNormal, div.MsoNormal
-	{margin-top:0cm;
-	margin-right:0cm;
-	margin-bottom:8.0pt;
-	margin-left:0cm;
-	line-height:107%;
-	font-size:11.0pt;
-	font-family:"Calibri",sans-serif;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	p.MsoBig, li.MsoBig, div.MsoBig
-	{margin-top:0cm;
-	margin-right:0cm;
-	margin-bottom:8.0pt;
-	margin-left:0cm;
-	line-height:107%;
-	font-size:18.0pt;
-	font-family:"Calibri",sans-serif;}
-.MsoChpDefault
-	{font-size:11.0pt;}
-.MsoPapDefault
-	{margin-bottom:8.0pt;
-	line-height:107%;}
-@page WordSection1
-	{size:612.0pt 792.0pt;
-	margin:72.0pt 72.0pt 72.0pt 72.0pt;}
-div.WordSection1
-	{page:WordSection1;}
- /* List Definitions */
- ol
-	{margin-bottom:0cm;}
-ul
-	{margin-bottom:0cm;}
--->
-</style>
+  <title>Dashboard Manual | InfoMatrix 3D</title>
+  <meta name="description" content="Complete InfoMatrix 3D Dashboard Manual covering Focus Mode, Visualizer Mode, stock and crypto tickers, sports trackers, commute routes, weather, GIFs, custom apps, and system controls.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#f8fafc">
 
+  <link rel="canonical" href="https://www.infomatrix3d.com/help.html">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+  <style>
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --primary-soft: #f0fdfa;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --note-bg: #f1f5f9;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --max-width: 1020px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    a { color: var(--primary); font-weight: 600; }
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+    }
+
+    code {
+      padding: 2px 7px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.9em;
+      color: var(--primary-dark);
+      background: var(--note-bg);
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 10px;
+      z-index: 1000;
+      padding: 10px 14px;
+      color: #fff;
+      font-weight: 700;
+      background: var(--primary);
+      border-radius: 6px;
+    }
+    .skip-link:focus { left: 10px; }
+
+    .container {
+      width: min(100% - 36px, var(--max-width));
+      margin-inline: auto;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand i { color: var(--primary); }
+
+    .top-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 0.95rem;
+    }
+
+    .top-nav a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .top-nav a:hover, .top-nav a.active { color: var(--primary); }
+
+    /* HEADER */
+    header {
+      padding: 56px 20px 42px;
+      text-align: center;
+      background: radial-gradient(circle at top, #e6f4f1 0%, #f8fafc 64%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--primary);
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      font-size: 0.82rem;
+    }
+
+    h1 {
+      max-width: 820px;
+      margin: 0 auto 14px;
+      color: var(--text);
+      font-size: clamp(2rem, 5vw, 3.1rem);
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+      font-weight: 800;
+    }
+
+    .tagline {
+      max-width: 740px;
+      margin: 0 auto 22px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.2vw, 1.14rem);
+    }
+
+    .access-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      font-size: 0.92rem;
+      color: var(--text);
+      background: var(--card);
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .access-banner i { color: var(--primary); }
+
+    /* SECTION INDEX */
+    .toc {
+      margin: 32px 0 24px;
+      padding: 20px 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .toc-title {
+      margin: 0 0 12px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+    }
+
+    .toc-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+    }
+
+    .toc-grid a {
+      padding: 6px 12px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    .toc-grid a:hover {
+      color: var(--primary-dark);
+      background: var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    /* MANUAL CARDS */
+    .doc-card {
+      margin: 24px 0;
+      padding: clamp(22px, 3.5vw, 32px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      scroll-margin-top: 76px;
+    }
+
+    .doc-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .doc-icon {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 10px;
+      font-size: 1.05rem;
+    }
+
+    .doc-header h2 {
+      margin: 0;
+      font-size: clamp(1.25rem, 2.8vw, 1.55rem);
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .doc-lead {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .doc-list {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--text);
+    }
+
+    .doc-list > li {
+      margin-bottom: 10px;
+    }
+
+    .doc-list > li:last-child {
+      margin-bottom: 0;
+    }
+
+    .doc-list ul {
+      margin-top: 6px;
+      padding-left: 20px;
+      color: var(--muted);
+    }
+
+    .doc-list ul li {
+      margin-bottom: 5px;
+    }
+
+    /* SUPPORT BANNER */
+    .support-card {
+      margin: 32px 0 12px;
+      padding: 26px 28px;
+      text-align: center;
+      background: var(--primary-soft);
+      border: 1px solid #99f6e4;
+      border-radius: 16px;
+    }
+
+    .support-card p {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    footer {
+      margin-top: 52px;
+      padding: 38px 20px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--muted);
+      background: var(--card);
+      border-top: 1px solid var(--border);
+    }
+
+    footer a { text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .doc-card { padding: 20px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { transition-duration: 0.01ms !important; }
+    }
+  </style>
 </head>
 
-<body lang=EN-CA style='tab-interval:36.0pt;word-wrap:break-word'>
-
-<div class=WordSection1>
-
-<p class=msobig><span class=SpellE><b>InfoMatrix</b></span><b> Dashboard User
-Manual</b></p>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-	<i>Access the dashboard from any browser by visiting the IP address shown in the display. Example: http://192.168.0.15</i>
-	<br><br>
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#128280;</span>
-
-1. Focus Mode</b></p>
-
-<p class=MsoNormal>Located at the top for immediate access.</p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l2 level1 lfo1;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Start/Stop Focus Mode</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Manually triggers the
-     Pomodoro timer. This overrides your normal rotation and starts the
-     &quot;Work&quot; countdown set in the Focus Timer section.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l2 level1 lfo1;tab-stops:list 36.0pt'><span
-     style='mso-fareast-font-family:"Times New Roman"'>This mode can also be
-     activated without accessing the dashboard by holding the physical<b>
-     button for 4 seconds</b><o:p></o:p></span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#x1F3B6;</span>
-2. Visualizer Mode</b></p>
-
-<p class=MsoNormal>Transform your matrix into a reactive music effect display.</p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Start/Stop Visualizer</span></b>: 
-     Activates the DDP listener. This mode overrides the standard rotation to prioritize high-speed pixel data streaming.</li>
- <li class=MsoNormal style='tab-stops:list 36.0pt'> 
-     Once enabled, use tools like <b><a href="https://ledfx.app/" target="_blank">LedFx</a></b> to stream audio effects, manage pixel mapping, and sync your lights to music.</li>
- <li class=MsoNormal style='tab-stops:list 36.0pt'><span
-     style='mso-fareast-font-family:"Times New Roman"'>For detailed connection steps and performance optimization, visit the <b><a href="visualizer_help.html">Visualizer Setup Guide</a></b>.</span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#128200;</span>
-3. Market Ticker Configuration</b></p>
-
-<p class=MsoNormal>This section manages financial data and visual
-representation.</p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Stock Symbols</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Enter symbols using <b><a href="https://finance.yahoo.com" target="_blank">Yahoo
-     Finance</a></b> formatting. Examples:<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Standard Stocks:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> AAPL, TSLA, NVDA,
-      SU.TO, <span class=GramE>BP.L</span><o:p></o:p></span></li>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Crypto:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> BTC-USD, ETH-EUR,
-      DOGE-USD<o:p></o:p></span></li>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Forex:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> CAD=X, EURUSD=X<o:p></o:p></span></li>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Commodities:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> GC=F (Gold), CL=F
-      (Crude Oil)<o:p></o:p></span></li>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Index:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> ^GSPC (S&amp;P 500),
-      ^DJI (Dow 30)<o:p></o:p></span></li>
- </ul>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Graph Range</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: The time window for
-     the chart.<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> 1h (1 Hour), 1d (1
-      Day), or Grid (Text list with no graphs).<o:p></o:p></span></li>
- </ul>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Graph Type</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Choose between Line, <span
-     class=SpellE>CandleStick</span>, or Both (alternates between the two).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Logo (Checkbox)</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Displays the asset
-     icon. <i>Requires a reboot to initialize the first time</i>.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>4Split (Checkbox)</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Divides the screen
-     into 4 small quadrants to show 4 tickers at once. Only available in higher model X12-128<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>.US (Checkbox)</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Optimizes US residents crypto data
-     fetching to meet regulations<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><span
-     class=SpellE><b><span style='mso-fareast-font-family:"Times New Roman"'>Finnhub</span></b></span><b><span
-     style='mso-fareast-font-family:"Times New Roman"'> API Key</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Get a free key at <b>finnhub.io</b>.
-     This enables real-time price display.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Exchange</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Only available if a <span
-     class=SpellE>Finnhub</span> key is present. Select your preferred crypto
-     venue (e.g., BINANCE, COINBASE).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><span
-     class=SpellE><b><span style='mso-fareast-font-family:"Times New Roman"'>TwelveData</span></b></span><b><span
-     style='mso-fareast-font-family:"Times New Roman"'> API Key</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Get a free key at <b>twelvedata.com</b>.
-     Used as high-quality secondary data for OHLC graphs. Can also be used for symbols not availble in yahoo (e.g. XAU/USD, BCO/USD)<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Stock Alerts</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Set triggers
-     that make the price in screen flash and beep when condition is met. Use operator &lt; or &gt; (less than or greater than) <o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> TSLA &gt; 300, BTC-USD
-      &lt; 45000.<o:p></o:p></span></li>
- </ul>
- <li class=MsoNormal style='mso-list:l7 level1 lfo2;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Custom Display Names</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Rename tickers for the
-     screen using the &gt;&gt; operator.<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l7 level2 lfo2;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> BTC-USD &gt;&gt;
-      BITCOIN, GC=F &gt;&gt; GOLD.<o:p></o:p></span></li>
- </ul>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#127942;</span>
-4. Sports Tracker</b></p>
-
-<p class=MsoNormal>Input 2-4 letter city or team codes.</p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l6 level1 lfo3;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>NBA / EPL / NFL / NHL /
-     MLB</span></b><span style='mso-fareast-font-family:"Times New Roman"'>:
-     Enter specific team codes separated by commas, or enter ALL to track every live
-     game in that league.<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l6 level2 lfo3;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> TOR, LAL, GSW or ARS,
-      LIV, MUN.<o:p></o:p></span></li>
-<li class=MsoNormal style='mso-list:l6 level2 lfo3;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>List of Team Codes:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> 
-		  <a href="teams.html" target="_blank">Here</a><o:p></o:p></span></li>
- </ul>
- <li class=MsoNormal style='mso-list:l6 level1 lfo3;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Cricket Team or Series</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Search by specific
-     country or tournament keywords.<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l6 level2 lfo3;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> ENGLAND, ICC, or TOP.<o:p></o:p></span></li>
- </ul>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#128663;</span>
-5. Commute Configuration</b></p>
-
-<p class=MsoNormal>Calculates travel time using the <b>Google Routes API</b>. <a href="googleapi.html" target="_blank">How to get Google API for free ?</a></p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l4 level1 lfo4;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Google Routes API Key</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Required for this
-     module to function.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l4 level1 lfo4;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Origin / Destination</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Enter street addresses
-     or specific Latitude/Longitude coordinates.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l4 level1 lfo4;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Transport Mode</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Choose Car, Bus,
-     Rail, or Train.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l4 level1 lfo4;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Active Window</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Sets the hours (0-23)
-     the commute info appears.<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l4 level2 lfo4;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> 7 to 9 (Morning
-      commute to work).<o:p></o:p></span></li>
- </ul>
- <li class=MsoNormal style='mso-list:l4 level1 lfo4;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Station Address</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Only appears if Train
-     is selected. Input your local station for &quot;Park &amp; Ride&quot;
-     calculations.<o:p></o:p></span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#9729;&#65039;</span>
-6. City Weather</b></p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l0 level1 lfo5;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>City Weather</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Enter in City, <span
-     class=SpellE>CountryCode</span> format.<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l0 level2 lfo5;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> Toronto, CA or London,
-      GB.<o:p></o:p></span></li>
- </ul>
- <li class=MsoNormal style='mso-list:l0 level1 lfo5;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Temp Units</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Select Celsius (Â°C)
-     or Fahrenheit (Â°F).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l0 level1 lfo5;tab-stops:list 36.0pt'><span
-     class=SpellE><b><span style='mso-fareast-font-family:"Times New Roman"'>Timezone</span></b></span><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Your UTC offset.<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l0 level2 lfo5;tab-stops:list 72.0pt'><i><span
-      style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-      style='mso-fareast-font-family:"Times New Roman"'> -5 for EST, 0 for GMT.<o:p></o:p></span></li>
- </ul>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#128172;</span>
-7. Message Configuration</b></p>
-
-<p class=MsoNormal>Configure up to 3 custom rows of info.</p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l3 level1 lfo6;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Mode</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Select Text (static
-     message) or RSS (scrolling feed).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l3 level1 lfo6;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Value</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Enter your custom text
-     or a full RSS URL (e.g. news site link - https://feeds.bbci.co.uk/news/rss.xml).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l3 level1 lfo6;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Color</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Use the color picker
-     to set the text color for that specific row.<o:p></o:p></span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#9201;&#65039;</span>
-8. Focus Timer (Pomodoro)</b></p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l1 level1 lfo7;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Work (min)</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Duration of the focus
-     period. <i>Default: 25</i>.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l1 level1 lfo7;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Break (min)</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Duration of the rest
-     period. <i>Default: 5</i>.<o:p></o:p></span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#127769;</span>
-9. Brightness &amp; Schedule</b></p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l8 level1 lfo8;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Brightness Slider</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Master LED intensity
-     (5-255).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l8 level1 lfo8;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Night Mode (Checkbox)</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Enables scheduled
-     dimming.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l8 level1 lfo8;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Dim Between</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Set start/end hours
-     (e.g., 22 to 7).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l8 level1 lfo8;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Night Brightness</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Set a lower intensity
-     for the night window.<o:p></o:p></span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#9202;&#65039;</span>
-10. Cycle Durations</b></p>
-
-<p class=MsoNormal>Sets how many seconds each module stays on screen.</p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l10 level1 lfo9;tab-stops:list 36.0pt'><i><span
-     style='mso-fareast-font-family:"Times New Roman"'>Example:</span></i><span
-     style='mso-fareast-font-family:"Times New Roman"'> 60 for Stocks, 10 for
-     Weather, 30 for NBA scores.<o:p></o:p></span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#128444;&#65039;</span>
-11. Upload Animation (GIF)</b></p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l5 level1 lfo10;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Matrix Size</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Choose your display pixel
-     size (128x64, 80x40, or 64x32).<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l5 level1 lfo10;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Resize Mode</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>:<o:p></o:p></span></li>
- <ul style='margin-top:0cm' type=circle>
-  <li class=MsoNormal style='mso-list:l5 level2 lfo10;tab-stops:list 72.0pt'><span
-      style='mso-fareast-font-family:"Times New Roman"'>Stretch: Forces GIF to
-      fill the whole screen.<o:p></o:p></span></li>
-  <li class=MsoNormal style='mso-list:l5 level2 lfo10;tab-stops:list 72.0pt'><span
-      style='mso-fareast-font-family:"Times New Roman"'>Fit: Maintains aspect
-      ratio with black bars.<o:p></o:p></span></li>
-  <li class=MsoNormal style='mso-list:l5 level2 lfo10;tab-stops:list 72.0pt'><span
-      style='mso-fareast-font-family:"Times New Roman"'>Crop: Fills screen by
-      cutting off edges.<o:p></o:p></span></li>
- </ul>
- <li class=MsoNormal style='mso-list:l5 level1 lfo10;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Drop Zone</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Upload or Drag and drop your GIF
-     here to process it into a matrix-ready format<o:p></o:p></span></li>
-</ul>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#128444;&#65039;</span>
-12. Custom App</b></p>
-<p class=MsoNormal>Run own hosted app. Supports any webp image. For advanced user only.
-<br> <a href="tronbyt.html" target="_blank">Run free Tronbyt server</a>
-</p>
-
-<div style='margin-bottom:8.0pt'>
-
-<div class=MsoNormal align=center style='margin-bottom:0cm;text-align:center'><span
-style='mso-fareast-font-family:"Times New Roman"'>
-
-<hr size=2 width="100%" align=center>
-
-</span></div>
-
-</div>
-
-
-<p class=MsoNormal><b><span style='font-family:"Segoe UI Emoji",sans-serif'>&#128736;&#65039;</span>
-13. System Controls</b></p>
-
-<ul style='margin-top:0cm' type=disc>
- <li class=MsoNormal style='mso-list:l9 level1 lfo11;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Save Configuration</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Saves all settings to
-     the Device MC. Updates take effect immediately.<o:p></o:p></span></li>
- <li class=MsoNormal style='mso-list:l9 level1 lfo11;tab-stops:list 36.0pt'><b><span
-     style='mso-fareast-font-family:"Times New Roman"'>Reboot Device</span></b><span
-     style='mso-fareast-font-family:"Times New Roman"'>: Performs a hardware
-     reset. Necessary after changing Logo or Sports settings.<o:p></o:p></span></li>
-</ul>
-</br></br>
-	For Software upgrade or support visit: <a href=https://update.infomatrix3d.com/>HERE</a>
-<p class=MsoNormal>&nbsp;</p>
-
-</div>
-
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"f7666e83252b4768b3e71bff29a46f1c","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<body>
+  <a class="skip-link" href="#main-content">Skip to Dashboard Manual</a>
+
+  <div class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="https://www.infomatrix3d.com/">
+        <i class="fas fa-th" aria-hidden="true"></i> InfoMatrix 3D
+      </a>
+      <nav class="top-nav" aria-label="Primary navigation">
+        <a href="https://www.infomatrix3d.com/">Home</a>
+        <a href="https://www.infomatrix3d.com/setup.html">Setup Guide</a>
+        <a href="https://www.infomatrix3d.com/help.html" class="active">Dashboard Manual</a>
+        <a href="https://update.infomatrix3d.com/" target="_blank" rel="noopener noreferrer">Firmware Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <header>
+    <p class="eyebrow">Documentation &amp; Reference</p>
+    <h1>Dashboard Manual</h1>
+    <p class="tagline">Configure tickers, sports scores, commute routes, weather, custom messages, GIF animations, custom apps, and display controls from your browser.</p>
+    <div class="access-banner">
+      <i class="fas fa-globe" aria-hidden="true"></i>
+      <span>Open the dashboard from any browser on your network using the display's IP address (e.g., <code>http://192.168.0.15</code>).</span>
+    </div>
+  </header>
+
+  <main id="main-content" class="container">
+    <nav class="toc" aria-label="Manual sections">
+      <p class="toc-title">Jump to Section</p>
+      <div class="toc-grid">
+        <a href="#focus-mode">1. Focus Mode</a>
+        <a href="#visualizer-mode">2. Visualizer Mode</a>
+        <a href="#market-ticker">3. Market Ticker</a>
+        <a href="#sports-tracker">4. Sports Tracker</a>
+        <a href="#commute">5. Commute</a>
+        <a href="#weather">6. City Weather</a>
+        <a href="#messages">7. Messages &amp; RSS</a>
+        <a href="#pomodoro">8. Focus Timer</a>
+        <a href="#brightness">9. Brightness &amp; Schedule</a>
+        <a href="#durations">10. Cycle Durations</a>
+        <a href="#gif-upload">11. Upload GIF</a>
+        <a href="#custom-app">12. Custom App</a>
+        <a href="#system-controls">13. System Controls</a>
+      </div>
+    </nav>
+
+    <!-- 1. FOCUS MODE -->
+    <section id="focus-mode" class="doc-card" aria-labelledby="s1-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-bolt" aria-hidden="true"></i></span>
+        <h2 id="s1-title">1. Focus Mode</h2>
+      </div>
+      <p class="doc-lead">Located at the top of the dashboard for immediate access.</p>
+      <ul class="doc-list">
+        <li><strong>Start/Stop Focus Mode:</strong> Manually triggers the Pomodoro timer, overriding your normal content rotation and starting the <em>Work</em> countdown configured in the Focus Timer section.</li>
+        <li><strong>Physical Button Shortcut:</strong> Can also be toggled without opening the dashboard by holding the physical device button for <strong>4 seconds</strong>.</li>
+      </ul>
+    </section>
+
+    <!-- 2. VISUALIZER MODE -->
+    <section id="visualizer-mode" class="doc-card" aria-labelledby="s2-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-music" aria-hidden="true"></i></span>
+        <h2 id="s2-title">2. Visualizer Mode</h2>
+      </div>
+      <p class="doc-lead">Transform your matrix into a reactive music effect display.</p>
+      <ul class="doc-list">
+        <li><strong>Start/Stop Visualizer:</strong> Activates the DDP listener, overriding standard rotation to prioritize high-speed pixel data streaming.</li>
+        <li><strong>LedFx Integration:</strong> Once enabled, use tools like <a href="https://ledfx.app/" target="_blank" rel="noopener noreferrer">LedFx</a> to stream audio effects, manage pixel mapping, and sync lights to music.</li>
+        <li><strong>Detailed Guide:</strong> Visit the <a href="visualizer_help.html">Visualizer Setup Guide</a> for connection steps and performance tuning.</li>
+      </ul>
+    </section>
+
+    <!-- 3. MARKET TICKER -->
+    <section id="market-ticker" class="doc-card" aria-labelledby="s3-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-chart-line" aria-hidden="true"></i></span>
+        <h2 id="s3-title">3. Market Ticker Configuration</h2>
+      </div>
+      <p class="doc-lead">Manages financial data symbols, chart styles, alerts, and visual layout.</p>
+      <ul class="doc-list">
+        <li><strong>Stock Symbols:</strong> Enter symbols using <a href="https://finance.yahoo.com" target="_blank" rel="noopener noreferrer">Yahoo Finance</a> formatting:
+          <ul>
+            <li><em>Standard Stocks:</em> <code>AAPL</code>, <code>TSLA</code>, <code>NVDA</code>, <code>SU.TO</code>, <code>BP.L</code></li>
+            <li><em>Crypto:</em> <code>BTC-USD</code>, <code>ETH-EUR</code>, <code>DOGE-USD</code></li>
+            <li><em>Forex:</em> <code>CAD=X</code>, <code>EURUSD=X</code></li>
+            <li><em>Commodities:</em> <code>GC=F</code> (Gold), <code>CL=F</code> (Crude Oil)</li>
+            <li><em>Index:</em> <code>^GSPC</code> (S&amp;P 500), <code>^DJI</code> (Dow 30)</li>
+          </ul>
+        </li>
+        <li><strong>Graph Range:</strong> Sets the chart time window (e.g., <code>1h</code> for 1 Hour, <code>1d</code> for 1 Day, or <code>Grid</code> for a text list without graphs).</li>
+        <li><strong>Graph Type:</strong> Choose <code>Line</code>, <code>CandleStick</code>, or <code>Both</code> (alternates between line and candlestick views).</li>
+        <li><strong>Logo (Checkbox):</strong> Displays the asset icon. <em>Requires a reboot when initializing for the first time.</em></li>
+        <li><strong>4Split (Checkbox):</strong> Splits the display into 4 quadrants to show 4 tickers simultaneously (available on the <code>X12-128</code> model).</li>
+        <li><strong>.US (Checkbox):</strong> Optimizes crypto data fetching for U.S. regulatory requirements.</li>
+        <li><strong>Finnhub API Key:</strong> Free key from <code>finnhub.io</code> to enable real-time price updates.</li>
+        <li><strong>Exchange:</strong> Available when a Finnhub key is set; choose your preferred crypto exchange (e.g., <code>BINANCE</code>, <code>COINBASE</code>).</li>
+        <li><strong>TwelveData API Key:</strong> Free key from <code>twelvedata.com</code> used as high-quality secondary OHLC chart data or for symbols unavailable on Yahoo Finance (such as <code>XAU/USD</code> or <code>BCO/USD</code>).</li>
+        <li><strong>Stock Alerts:</strong> Trigger screen flashing and an audible beep using <code>&lt;</code> or <code>&gt;</code> operators:
+          <ul>
+            <li><em>Example:</em> <code>TSLA &gt; 300</code>, <code>BTC-USD &lt; 45000</code></li>
+          </ul>
+        </li>
+        <li><strong>Custom Display Names:</strong> Rename tickers on screen using the <code>&gt;&gt;</code> operator:
+          <ul>
+            <li><em>Example:</em> <code>BTC-USD &gt;&gt; BITCOIN</code>, <code>GC=F &gt;&gt; GOLD</code></li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 4. SPORTS TRACKER -->
+    <section id="sports-tracker" class="doc-card" aria-labelledby="s4-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-trophy" aria-hidden="true"></i></span>
+        <h2 id="s4-title">4. Sports Tracker</h2>
+      </div>
+      <p class="doc-lead">Track live games and scores using 2–4 letter city or team codes.</p>
+      <ul class="doc-list">
+        <li><strong>NBA / EPL / NFL / NHL / MLB:</strong> Enter comma-separated team codes (e.g., <code>TOR, LAL, GSW</code> or <code>ARS, LIV, MUN</code>) or enter <code>ALL</code> to track every live game in that league. See the full <a href="teams.html" target="_blank" rel="noopener noreferrer">List of Team Codes</a>.</li>
+        <li><strong>Cricket Team or Series:</strong> Search by country or tournament keywords such as <code>ENGLAND</code>, <code>ICC</code>, or <code>TOP</code>.</li>
+      </ul>
+    </section>
+
+    <!-- 5. COMMUTE CONFIGURATION -->
+    <section id="commute" class="doc-card" aria-labelledby="s5-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-car" aria-hidden="true"></i></span>
+        <h2 id="s5-title">5. Commute Configuration</h2>
+      </div>
+      <p class="doc-lead">Calculates travel time via the <strong>Google Routes API</strong> (<a href="googleapi.html" target="_blank" rel="noopener noreferrer">How to get a Google API key for free</a>).</p>
+      <ul class="doc-list">
+        <li><strong>Google Routes API Key:</strong> Required for commute calculations.</li>
+        <li><strong>Origin / Destination:</strong> Enter street addresses or latitude/longitude coordinates.</li>
+        <li><strong>Transport Mode:</strong> Select <code>Car</code>, <code>Bus</code>, <code>Rail</code>, or <code>Train</code>.</li>
+        <li><strong>Active Window:</strong> Sets the hours (<code>0–23</code>) when commute info displays (e.g., <code>7 to 9</code> for a morning commute).</li>
+        <li><strong>Station Address:</strong> Shown when <code>Train</code> is selected; enter your station for Park &amp; Ride estimates.</li>
+      </ul>
+    </section>
+
+    <!-- 6. CITY WEATHER -->
+    <section id="weather" class="doc-card" aria-labelledby="s6-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-cloud-sun" aria-hidden="true"></i></span>
+        <h2 id="s6-title">6. City Weather</h2>
+      </div>
+      <ul class="doc-list">
+        <li><strong>City Weather:</strong> Enter as <code>City, CountryCode</code> (e.g., <code>Toronto, CA</code> or <code>London, GB</code>).</li>
+        <li><strong>Temp Units:</strong> Select Celsius (<code>°C</code>) or Fahrenheit (<code>°F</code>).</li>
+        <li><strong>Timezone:</strong> Enter your UTC offset (e.g., <code>-5</code> for EST, <code>0</code> for GMT).</li>
+      </ul>
+    </section>
+
+    <!-- 7. MESSAGE CONFIGURATION -->
+    <section id="messages" class="doc-card" aria-labelledby="s7-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-comment-dots" aria-hidden="true"></i></span>
+        <h2 id="s7-title">7. Message Configuration</h2>
+      </div>
+      <p class="doc-lead">Configure up to 3 custom rows of text or live feeds.</p>
+      <ul class="doc-list">
+        <li><strong>Mode:</strong> Choose <code>Text</code> (static message) or <code>RSS</code> (scrolling feed).</li>
+        <li><strong>Value:</strong> Enter custom text or a full RSS feed URL (e.g., <code>https://feeds.bbci.co.uk/news/rss.xml</code>).</li>
+        <li><strong>Color:</strong> Pick the text color for that row using the color picker.</li>
+      </ul>
+    </section>
+
+    <!-- 8. FOCUS TIMER -->
+    <section id="pomodoro" class="doc-card" aria-labelledby="s8-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-stopwatch" aria-hidden="true"></i></span>
+        <h2 id="s8-title">8. Focus Timer (Pomodoro)</h2>
+      </div>
+      <ul class="doc-list">
+        <li><strong>Work (min):</strong> Focus session length in minutes (default: <code>25</code>).</li>
+        <li><strong>Break (min):</strong> Rest session length in minutes (default: <code>5</code>).</li>
+      </ul>
+    </section>
+
+    <!-- 9. BRIGHTNESS & SCHEDULE -->
+    <section id="brightness" class="doc-card" aria-labelledby="s9-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-moon" aria-hidden="true"></i></span>
+        <h2 id="s9-title">9. Brightness &amp; Schedule</h2>
+      </div>
+      <ul class="doc-list">
+        <li><strong>Brightness Slider:</strong> Controls master LED intensity (<code>5–255</code>).</li>
+        <li><strong>Night Mode (Checkbox):</strong> Enables automatic scheduled dimming.</li>
+        <li><strong>Dim Between:</strong> Sets start and end hours (e.g., <code>22 to 7</code>).</li>
+        <li><strong>Night Brightness:</strong> Sets the reduced brightness level during the night window.</li>
+      </ul>
+    </section>
+
+    <!-- 10. CYCLE DURATIONS -->
+    <section id="durations" class="doc-card" aria-labelledby="s10-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-hourglass-half" aria-hidden="true"></i></span>
+        <h2 id="s10-title">10. Cycle Durations</h2>
+      </div>
+      <p class="doc-lead">Controls how many seconds each module stays on screen per rotation.</p>
+      <ul class="doc-list">
+        <li><em>Example:</em> <code>60</code> for Stocks, <code>10</code> for Weather, <code>30</code> for NBA scores.</li>
+      </ul>
+    </section>
+
+    <!-- 11. UPLOAD ANIMATION (GIF) -->
+    <section id="gif-upload" class="doc-card" aria-labelledby="s11-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-film" aria-hidden="true"></i></span>
+        <h2 id="s11-title">11. Upload Animation (GIF)</h2>
+      </div>
+      <ul class="doc-list">
+        <li><strong>Matrix Size:</strong> Select your display resolution (<code>128x64</code>, <code>80x40</code>, or <code>64x32</code>).</li>
+        <li><strong>Resize Mode:</strong>
+          <ul>
+            <li><strong>Stretch:</strong> Scales the GIF to fill the entire display.</li>
+            <li><strong>Fit:</strong> Preserves aspect ratio with black bars as needed.</li>
+            <li><strong>Crop:</strong> Fills the screen by trimming edges.</li>
+          </ul>
+        </li>
+        <li><strong>Drop Zone:</strong> Upload or drag and drop a GIF to convert it into a matrix-ready animation.</li>
+      </ul>
+    </section>
+
+    <!-- 12. CUSTOM APP -->
+    <section id="custom-app" class="doc-card" aria-labelledby="s12-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-code" aria-hidden="true"></i></span>
+        <h2 id="s12-title">12. Custom App</h2>
+      </div>
+      <p class="doc-lead">Run your own hosted app using any compatible <code>WebP</code> image (recommended for advanced users).</p>
+      <ul class="doc-list">
+        <li><a href="tronbyt.html" target="_blank" rel="noopener noreferrer">Run free Tronbyt server</a></li>
+      </ul>
+    </section>
+
+    <!-- 13. SYSTEM CONTROLS -->
+    <section id="system-controls" class="doc-card" aria-labelledby="s13-title">
+      <div class="doc-header">
+        <span class="doc-icon"><i class="fas fa-tools" aria-hidden="true"></i></span>
+        <h2 id="s13-title">13. System Controls</h2>
+      </div>
+      <ul class="doc-list">
+        <li><strong>Save Configuration:</strong> Writes settings to the device microcontroller; most changes apply immediately.</li>
+        <li><strong>Reboot Device:</strong> Performs a hardware restart (required after changing Logo or Sports settings).</li>
+      </ul>
+    </section>
+
+    <section class="support-card" aria-label="Firmware updates and support">
+      <p>For software upgrades or technical support, visit <a href="https://update.infomatrix3d.com/" target="_blank" rel="noopener noreferrer">update.infomatrix3d.com</a> or email <a href="mailto:infomatrix.contact@gmail.com">infomatrix.contact@gmail.com</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 InfoMatrix 3D. Smart desktop ticker.</p>
+    <p>
+      <a href="https://www.infomatrix3d.com/">Home</a> ·
+      <a href="https://www.infomatrix3d.com/setup.html">Setup Guide</a> ·
+      <a href="https://www.infomatrix3d.com/help.html">Dashboard Manual</a> ·
+      <a href="https://update.infomatrix3d.com/" target="_blank" rel="noopener noreferrer">Firmware Update</a>
+    </p>
+  </footer>
 </body>
-
 </html>
